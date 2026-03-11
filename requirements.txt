@@ -1,0 +1,16 @@
+# Data Manipulation & Statistics 
+pandas 
+numpy
+matplotlib
+seaborn  
+
+# Visualization & Dashboard (GUI)   
+streamlit
+
+# Machine Learning & Metrics   
+
+# Optimization & MLOps   
+
+# Advanced Visualization (for Decision Trees and Dendrograms) 
+
+# Recommendation Algorithms (Challenge Component) 
