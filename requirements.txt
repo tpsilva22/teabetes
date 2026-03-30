@@ -6,6 +6,8 @@ seaborn
 
 # Visualization & Dashboard (GUI)   
 streamlit
+plotly
+statsmodels
 
 # Machine Learning & Metrics   
 
