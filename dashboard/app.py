@@ -4,7 +4,7 @@ st.set_page_config(
     page_title="TeaBetes",
     page_icon="🩺",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 USERS = {
@@ -17,7 +17,7 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Lora:wght@500;600&display=swap');
 
 html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
-[data-testid="stSidebarNav"], [data-testid="collapsedControl"] { display: none; }
+[data-testid="collapsedControl"] { display: none; }
 .block-container { padding-top: 2rem !important; }
 
 /* Landing */
@@ -71,48 +71,44 @@ def logout():
 
 # ── Landing ───────────────────────────────────────────────────────────────────
 def show_landing():
-    # Top spacer
     st.markdown("<div style='height:3rem'></div>", unsafe_allow_html=True)
 
-    # Logo + subtitle — centered via columns
     _, mid, _ = st.columns([1, 2, 1])
     with mid:
         st.markdown("""
         <div style="text-align:center; margin-bottom:2.5rem">
             <div class="land-logo">🩺 TeaBetes</div>
-            <div class="land-sub">Dashboard de Análise de Diabetes</div>
+            <div class="land-sub">Diabetes Analysis Dashboard</div>
         </div>
         """, unsafe_allow_html=True)
 
-    # Cards — two equal columns centered
     _, card1, gap, card2, _ = st.columns([1, 3, 0.3, 3, 1])
     with card1:
         st.markdown("""
         <div class="sel-card">
-            <div class="sel-card-title">Explorador de Saúde</div>
-            <div class="sel-card-desc">Insira os seus dados e explore o seu perfil de risco com gráficos interativos em tempo real.</div>
+            <div class="sel-card-title">Health Explorer</div>
+            <div class="sel-card-desc">Input your data and explore your risk profile with real-time interactive charts.</div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-        if st.button("Explorar sem conta", key="go_patient", use_container_width=True):
+        if st.button("Explore without an account", key="go_patient", use_container_width=True):
             st.session_state.view = "patient"; st.rerun()
 
     with card2:
         st.markdown("""
         <div class="sel-card">
-            <div class="sel-card-title">Área Clínica</div>
-            <div class="sel-card-desc">Análise populacional, correlações clínicas e identificação de grupos de risco. Requer login.</div>
+            <div class="sel-card-title">Clinical Area</div>
+            <div class="sel-card-desc">Population analysis, metabolic correlations, and risk group identification. Login required.</div>
         </div>
         """, unsafe_allow_html=True)
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-        if st.button("Entrar como Médico", key="go_login", use_container_width=True):
+        if st.button("Login as Doctor", key="go_login", use_container_width=True):
             st.session_state.view = "login"; st.rerun()
 
 
 # ── Login ─────────────────────────────────────────────────────────────────────
 def show_login():
-    st.markdown("<style>[data-testid='stSidebar']{display:none}</style>",
-                unsafe_allow_html=True)
+    st.markdown("<style>[data-testid='stSidebar']{display:none}</style>", unsafe_allow_html=True)
 
     col_info, col_form = st.columns([1, 1], gap="large")
 
@@ -120,16 +116,16 @@ def show_login():
         st.markdown("""
         <div style="padding:3rem 2rem 0 2rem">
             <div style="font-family:'Lora',serif;font-size:1.8rem;color:#4da6d9;margin-bottom:14px">
-                Área Clínica
+                Clinical Area
             </div>
             <div style="opacity:.55;font-size:.9rem;line-height:1.75;margin-bottom:20px">
-                Acesso exclusivo a profissionais de saúde.<br><br>
-                Visualize a distribuicao de estadios, analise correlacoes metabolicas,
-                compare grupos de risco por idade e explore o dataset completo
-                com graficos interativos.
+                Exclusive access for healthcare professionals.<br><br>
+                Visualise stage distribution, analyse metabolic correlations,
+                compare risk groups by age, and explore the complete dataset
+                with interactive charts.
             </div>
             <div style="opacity:.3;font-size:.76rem;border-top:1px solid rgba(128,128,128,.2);padding-top:14px">
-                Demo &mdash; utilizador: <code>admin</code> &nbsp;/&nbsp; password: <code>admin</code>
+                Demo &mdash; user: <code>admin</code> &nbsp;/&nbsp; password: <code>admin</code>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -138,16 +134,15 @@ def show_login():
         st.markdown("<div style='height:2.5rem'></div>", unsafe_allow_html=True)
         st.markdown('<div class="login-box">', unsafe_allow_html=True)
         st.markdown('<div class="login-title">🩺 TeaBetes</div>', unsafe_allow_html=True)
-        st.markdown('<div class="login-sub">Profissionais de saúde</div>', unsafe_allow_html=True)
+        st.markdown('<div class="login-sub">Healthcare Professionals</div>', unsafe_allow_html=True)
 
-        username = st.text_input("Utilizador", placeholder="admin", key="login_user")
+        username = st.text_input("User", placeholder="admin", key="login_user")
         password = st.text_input("Password", type="password", placeholder="••••••••", key="login_pw")
 
         if st.session_state.get("login_error"):
-            st.markdown('<div class="err-box">Credenciais incorretas.</div>',
-                        unsafe_allow_html=True)
+            st.markdown('<div class="err-box">Incorrect credentials.</div>', unsafe_allow_html=True)
 
-        if st.button("Entrar", key="do_login"):
+        if st.button("Login", key="do_login"):
             if do_login(username, password):
                 st.session_state.login_error = False
                 st.session_state.view = "doctor"
@@ -157,7 +152,7 @@ def show_login():
                 st.rerun()
 
         st.markdown("</div>", unsafe_allow_html=True)
-        if st.button("Voltar ao início", key="back_login"):
+        if st.button("Back to Home", key="back_login"):
             st.session_state.view = "landing"
             st.session_state.login_error = False
             st.rerun()
@@ -167,8 +162,7 @@ def show_login():
 view = st.session_state.get("view", "landing")
 
 if view == "landing":
-    st.markdown("<style>[data-testid='stSidebar']{display:none}</style>",
-                unsafe_allow_html=True)
+    st.markdown("<style>[data-testid='stSidebar']{display:none}</style>", unsafe_allow_html=True)
     show_landing()
 
 elif view == "login":
