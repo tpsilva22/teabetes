@@ -85,13 +85,13 @@ def estimate_risk(age, bmi, hba1c, glucose, sbp, family, hypert, smoking, activi
 def classify(hba1c, glucose):
     if hba1c >= 6.5 or glucose >= 126: return "Diabetes",     C_RED,    3
     if hba1c >= 5.7 or glucose >= 100: return "Pre-Diabetes", C_YELLOW, 2
-    return "Sem Diabetes", C_GREEN, 1
+    return "No Diabetes", C_GREEN, 1
 
 def weight_status(bmi):
-    if bmi < 18.5: return "Abaixo do Peso", "#5b9bd5"
-    if bmi < 25.0: return "Peso Normal",    C_GREEN
-    if bmi < 30.0: return "Excesso de Peso", C_YELLOW
-    return "Obesidade", C_RED
+    if bmi < 18.5: return "Underweight", "#5b9bd5"
+    if bmi < 25.0: return "Normal Weight",    C_GREEN
+    if bmi < 30.0: return "Overweight", C_YELLOW
+    return "Obesity", C_RED
 
 def lifestyle_score(diet, activity, sleep, alcohol, smoking):
     act_s  = min(activity / 30, 10)
@@ -107,9 +107,9 @@ def age_group(age):
     return "Elderly"
 
 STAGE_DESC = {
-    "Sem Diabetes": "Os seus valores estão dentro dos parâmetros normais. Continue com os seus bons hábitos!",
-    "Pre-Diabetes": "Os seus valores estão ligeiramente elevados. Mudanças no estilo de vida podem evitar a progressão.",
-    "Diabetes":     "Os seus valores sugerem diabetes. Consulte o seu médico para confirmação e plano de tratamento.",
+    "No Diabetes": "Your values are within healthy parameters. Keep up the good habits!",
+    "Pre-Diabetes": "Your values are slightly elevated. Lifestyle changes can prevent progression.",
+    "Diabetes":     "Your values suggest diabetes. Consult your doctor for confirmation and a treatment plan.",
 }
 
 
@@ -138,7 +138,7 @@ def chart_gauge(value, color):
         mode="gauge+number",
         value=value,
         domain={"x": [0, 1], "y": [0, 1]},
-        title={"text": "Score de Risco", "font": {"size": 12, "color": "rgba(255,255,255,0.6)"}},
+        title={"text": "Risk Score", "font": {"size": 12, "color": "rgba(255,255,255,0.6)"}},
         number={"font": {"size": 34, "color": color}},
         gauge={
             "axis": {"range": [0, 100], "tickcolor": "rgba(255,255,255,0.25)",
@@ -164,7 +164,7 @@ def chart_lifestyle_gauge(score):
         mode="gauge+number",
         value=score,
         domain={"x": [0, 1], "y": [0, 1]},
-        title={"text": "Score de Estilo de Vida", "font": {"size": 12, "color": "rgba(255,255,255,0.6)"}},
+        title={"text": "Lifestyle Score", "font": {"size": 12, "color": "rgba(255,255,255,0.6)"}},
         number={"font": {"size": 30, "color": color}, "suffix": "/10"},
         gauge={
             "axis": {"range": [0, 10], "tickcolor": "rgba(255,255,255,0.25)",
@@ -184,11 +184,10 @@ def chart_lifestyle_gauge(score):
 
 
 def chart_activity_diet_bar(activity, diet, df):
-    """Bullet-style bar: user value vs population median."""
     pop_act_med  = df["physical_activity_minutes_per_week"].median()
     pop_diet_med = df["diet_score"].median()
 
-    categories = ["Atividade Física<br>(min/sem)", "Score de Dieta<br>(0-10)"]
+    categories = ["Physical Activity<br>(min/week)", "Diet Score<br>(0-10)"]
     user_vals   = [activity, diet]
     pop_vals    = [pop_act_med, pop_diet_med]
     ref_vals    = [150, 7]
@@ -199,20 +198,18 @@ def chart_activity_diet_bar(activity, diet, df):
         fig.add_trace(go.Bar(
             name=cat, x=[uv], y=[cat], orientation="h",
             marker_color=color, showlegend=False,
-            hovertemplate=f"<b>{cat}</b><br>O seu valor: {uv}<extra></extra>",
+            hovertemplate=f"<b>{cat}</b><br>Your Value: {uv}<extra></extra>",
             text=f"{uv}", textposition="outside", textfont=dict(size=11, color=color),
         ))
-        # Population median marker
         fig.add_shape(type="line",
                       x0=pv, x1=pv, y0=i-0.4, y1=i+0.4,
                       line=dict(color="rgba(255,255,255,0.5)", width=2, dash="dot"))
-        # Recommended line
         fig.add_shape(type="line",
                       x0=rv, x1=rv, y0=i-0.4, y1=i+0.4,
                       line=dict(color="rgba(255,255,255,0.85)", width=2))
 
     fig.update_layout(
-        title="O Seu Nível vs Recomendado (linha branca) e Média Populacional (pontilhado)",
+        title="Your Level vs Recommended (solid white) and Population Average (dotted)",
         barmode="overlay", height=200,
         xaxis=dict(showgrid=False, showticklabels=False),
         margin=dict(l=140, r=60, t=50, b=10),
@@ -222,32 +219,30 @@ def chart_activity_diet_bar(activity, diet, df):
 
 
 def chart_activity_glucose(df, user_activity, user_glucose):
-    """Exercise effect: activity vs fasting glucose from population."""
     bins = [0, 60, 120, 180, 240, 600]
     labels = ["0-60", "60-120", "120-180", "180-240", "240+"]
     tmp = df.copy()
     tmp["act_bin"] = pd.cut(tmp["physical_activity_minutes_per_week"],
                              bins=bins, labels=labels)
     agg = tmp.groupby("act_bin", observed=True)["glucose_fasting"].median().reset_index()
-    agg.columns = ["faixa", "glucose_mediana"]
+    agg.columns = ["bracket", "median_glucose"]
 
     fig = go.Figure()
     fig.add_trace(go.Bar(
-        x=agg["faixa"], y=agg["glucose_mediana"],
+        x=agg["bracket"], y=agg["median_glucose"],
         marker_color=C_BLUE, opacity=0.7,
-        hovertemplate="<b>%{x} min/sem</b><br>Glicose mediana: %{y:.1f} mg/dL<extra></extra>",
-        name="Mediana população",
+        hovertemplate="<b>%{x} min/week</b><br>Median Glucose: %{y:.1f} mg/dL<extra></extra>",
+        name="Population Median",
     ))
-    # User position
     user_bin = labels[min(int(user_activity // 60), 4)]
     fig.add_hline(y=user_glucose, line_dash="dot",
                   line_color=C_WARM, line_width=2,
-                  annotation_text=f"A sua glicose: {user_glucose} mg/dL",
+                  annotation_text=f"Your Glucose: {user_glucose} mg/dL",
                   annotation_font_size=10, annotation_font_color=C_WARM)
     fig.update_layout(
-        title="O Poder do Exercício: Atividade vs Glicemia em Jejum",
-        xaxis_title="Atividade Física (min/semana)",
-        yaxis_title="Glicose em Jejum — Mediana (mg/dL)",
+        title="The Power of Exercise: Activity vs Fasting Blood Sugar",
+        xaxis_title="Physical Activity (min/week)",
+        yaxis_title="Median Fasting Glucose (mg/dL)",
         height=300, margin=dict(l=50, r=10, t=50, b=50),
         **PLOTLY_LAYOUT,
     )
@@ -256,7 +251,6 @@ def chart_activity_glucose(df, user_activity, user_glucose):
 
 
 def chart_risk_vs_age_group(df, user_age, user_risk):
-    """User risk vs their age group median."""
     grp = age_group(user_age)
     agg = df.groupby("age_groups", observed=True)["diabetes_risk_score"].median().reindex(AGE_ORDER).dropna()
 
@@ -266,17 +260,17 @@ def chart_risk_vs_age_group(df, user_age, user_risk):
         marker_color=colors,
         text=agg.round(1).values,
         textposition="outside",
-        hovertemplate="<b>%{x}</b><br>Risco mediano: %{y:.1f}<extra></extra>",
+        hovertemplate="<b>%{x}</b><br>Median Risk: %{y:.1f}<extra></extra>",
     ))
     fig.add_hline(y=user_risk,
                   line_dash="dot", line_color=C_WARM, line_width=2,
-                  annotation_text=f"O seu risco: {user_risk:.0f}",
+                  annotation_text=f"Your Risk: {user_risk:.0f}",
                   annotation_font_size=10, annotation_font_color=C_WARM,
-                  annotation_position="top right")
+                  annotation_position="bottom right")
     fig.update_layout(
-        title=f"O Seu Risco vs Grupo Etário (o seu grupo: {grp})",
-        yaxis_title="Score de Risco Mediano",
-        height=280, margin=dict(l=50, r=10, t=50, b=50),
+        title=f"Your Risk vs Age Group (Your Group: {grp})",
+        yaxis_title="Median Risk Score",
+        height=280, margin=dict(l=50, r=10, t=60, b=50),
         **PLOTLY_LAYOUT,
     )
     axis_style(fig)
@@ -291,7 +285,7 @@ def chart_sedentary_gauge(screen_h, activity):
         mode="gauge+number",
         value=round(ratio, 1),
         domain={"x": [0, 1], "y": [0, 1]},
-        title={"text": "Índice de Sedentarismo<br>(ecrã/exercício)", "font": {"size": 11, "color": "rgba(255,255,255,0.6)"}},
+        title={"text": "Sedentary Index<br>(Screen/Exercise Ratio)", "font": {"size": 11, "color": "rgba(255,255,255,0.6)"}},
         number={"font": {"size": 28, "color": color}},
         gauge={
             "axis": {"range": [0, 20], "tickcolor": "rgba(255,255,255,0.25)",
@@ -309,15 +303,15 @@ def chart_sedentary_gauge(screen_h, activity):
     fig.update_layout(height=200, margin=dict(l=20, r=20, t=50, b=10), **PLOTLY_LAYOUT)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
     if ratio > 5:
-        tip("O seu rácio ecrã/exercício está elevado. Reduzir o tempo de ecrã melhora a sensibilidade à insulina e o sono.")
+        tip("Your screen-to-exercise ratio is high. Reducing screen time helps improve insulin sensitivity and sleep.")
     elif ratio > 2:
-        tip("Rácio moderado. Tente equilibrar melhor o tempo de ecrã com atividade física.")
+        tip("Moderate ratio. Try to balance screen time with physical activity.")
     else:
-        tip("Excelente equilíbrio entre atividade e tempo de ecrã!", good=True)
+        tip("Excellent balance between activity and screen time!", good=True)
 
 
 def chart_radar_lifestyle(diet, activity, sleep, alcohol, smoking):
-    cats = ["Dieta", "Exercício", "Sono", "Álcool", "Tabaco"]
+    cats = ["Diet", "Exercise", "Sleep", "Alcohol", "Smoking"]
     vals = [
         diet,
         min(activity / 30, 10),
@@ -339,7 +333,7 @@ def chart_radar_lifestyle(diet, activity, sleep, alcohol, smoking):
             angularaxis=dict(gridcolor="rgba(255,255,255,0.1)"),
             bgcolor="rgba(0,0,0,0)",
         ),
-        title="Perfil de Estilo de Vida",
+        title="Lifestyle Profile",
         height=300, showlegend=False,
         margin=dict(l=40, r=40, t=50, b=20),
         **PLOTLY_LAYOUT,
@@ -350,25 +344,25 @@ def chart_radar_lifestyle(diet, activity, sleep, alcohol, smoking):
 def get_tips(activity, diet, sleep, smoking, alcohol, bmi, risk):
     good, warn = [], []
     if activity >= 150:
-        good.append("Nível de atividade adequado. Continue a manter os 150 min/semana recomendados pela OMS.")
+        good.append("Adequate activity level. Keep maintaining the 150 min/week recommended by the WHO.")
     else:
-        warn.append(f"Atividade fisica baixa ({activity} min/sem). O objetivo e 150 min/semana. "
-                    f"Pessoas ativas tem em media 30% menos risco de diabetes.")
+        warn.append(f"Low physical activity ({activity} min/week). The goal is 150 min/week. "
+                    f"Active people have on average 30% less risk of diabetes.")
     if diet >= 7:
-        good.append("Score de dieta muito bom. Uma alimentação equilibrada é um dos maiores fatores de proteção.")
+        good.append("Great diet score. A balanced diet is one of the strongest protection factors.")
     elif diet < 5:
-        warn.append("Score de dieta baixo. Reduza acucares simples e aumente fibras e vegetais. "
-                    "Melhorar a dieta esta diretamente ligado a descida do IMC e do risco.")
+        warn.append("Low diet score. Reduce simple sugars and increase fibres and vegetables. "
+                    "Improving your diet is directly linked to lowering your BMI and risk.")
     if 6 <= sleep <= 9:
-        good.append("Horas de sono adequadas. O sono de qualidade regula as hormonas que controlam a glicose.")
+        good.append("Adequate sleeping hours. Quality sleep regulates hormones that control blood sugar.")
     else:
-        warn.append("O sono ideal é 7-8h/noite. Privação de sono aumenta a resistência à insulina.")
+        warn.append("Ideal sleep is 7-8h/night. Sleep deprivation increases insulin resistance.")
     if smoking == "Current":
-        warn.append("Fumar aumenta significativamente o risco de complicações vasculares e metabólicas.")
+        warn.append("Smoking significantly increases the risk of vascular and metabolic complications.")
     if alcohol > 7:
-        warn.append("Consumo de álcool elevado. Reduzir melhora o controlo glicémico e o peso.")
+        warn.append("High alcohol consumption. Reducing it will improve glycaemic control and weight.")
     if bmi > 25:
-        warn.append(f"IMC {bmi:.1f}. Uma perda de apenas 5-7% do peso corporal reduz drasticamente o risco.")
+        warn.append(f"BMI {bmi:.1f}. A body weight loss of just 5-7% drastically reduces your risk.")
     return good, warn
 
 
@@ -379,35 +373,43 @@ def show(back_fn):
 
     # Sidebar
     with st.sidebar:
-        st.markdown("### Os Meus Dados")
-        st.markdown('<div class="sidebar-sec">Pessoal</div>', unsafe_allow_html=True)
-        age    = st.slider("Idade", 18, 90, 45)
-        weight = st.number_input("Peso (kg)", 40.0, 200.0, 75.0, step=0.5)
-        height = st.number_input("Altura (cm)", 140, 220, 170)
-        family = st.checkbox("Histórico familiar de diabetes")
-        hypert = st.checkbox("Hipertensão diagnosticada")
+        st.markdown("### My Health Data")
+        st.markdown('<div class="sidebar-sec">Personal</div>', unsafe_allow_html=True)
+        age    = st.slider("Age", 18, 90, 45)
+        weight = st.number_input("Weight (kg)", 40.0, 200.0, 75.0, step=0.5)
+        height = st.number_input("Height (cm)", 140, 220, 170)
+        family = st.checkbox("Family History of Diabetes")
+        hypert = st.checkbox("Diagnosed Hypertension")
 
-        st.markdown('<div class="sidebar-sec">Valores Clinicos</div>', unsafe_allow_html=True)
-        hba1c       = st.slider("HbA1c (%)", 4.0, 14.0, 5.5, step=0.1,
-                                 help="Hemoglobina glicada — média dos últimos 3 meses")
-        glucose     = st.slider("Glicose Jejum (mg/dL)", 60, 350, 90,
-                                 help="Normal: 70-100 mg/dL")
-        postprandial = st.slider("Glicose Pos-Prandial (mg/dL)", 60, 400, 140,
-                                  help="Após refeição — normal < 140 mg/dL")
-        sbp         = st.slider("Pressao Sistolica (mmHg)", 80, 210, 120)
-        chol        = st.slider("Colesterol Total (mg/dL)", 100, 380, 180)
+        st.markdown('<div class="sidebar-sec">Clinical Values</div>', unsafe_allow_html=True)
+        hba1c       = st.slider("Average Blood Sugar (HbA1c %)", 4.0, 14.0, 5.5, step=0.1,
+                                 help="Glycated haemoglobin — shows your average blood sugar levels over the past 2-3 months. Normal range is below 5.7%. Ask your doctor for a blood test to measure this accurately.")
+        glucose     = st.slider("Fasting Blood Sugar (mg/dL)", 60, 350, 90,
+                                 help="Blood sugar levels measured after fasting for at least 8 hours. Normal range: 70-100 mg/dL.")
+        postprandial = st.slider("Post-Meal Sugar (mg/dL)", 60, 400, 140,
+                                  help="Blood sugar levels measured 2 hours after a meal. Normal range is typically under 140 mg/dL.")
+        sbp         = st.slider("Top Blood Pressure Number (Systolic mmHg)", 80, 210, 120,
+                                  help="The top number on your blood pressure reading. E.g., if you have 120/80, this value is 120.")
+        chol        = st.slider("Total Cholesterol (mg/dL)", 100, 380, 180,
+                                  help="Your total cholesterol level measured via a blood test. A healthy target is typically under 200 mg/dL.")
 
-        st.markdown('<div class="sidebar-sec">Estilo de Vida</div>', unsafe_allow_html=True)
-        activity = st.slider("Atividade Fisica (min/sem)", 0, 600, 120, step=10)
-        diet     = st.slider("Score de Dieta (0-10)", 0.0, 10.0, 6.0, step=0.5)
-        sleep    = st.slider("Sono (h/noite)", 3.0, 12.0, 7.5, step=0.5)
-        alcohol  = st.slider("Álcool (unidades/semana)", 0, 40, 2)
-        screen_h = st.slider("Tempo de ecrã (h/dia)", 0.0, 16.0, 6.0, step=0.5)
-        smoking  = st.selectbox("Tabaco", ["Never","Former","Current"],
-                                 format_func=lambda x: {"Never":"Nunca","Former":"Ex-fumador","Current":"Fumador"}[x])
+        st.markdown('<div class="sidebar-sec">Lifestyle</div>', unsafe_allow_html=True)
+        activity = st.slider("Physical Activity (min/week)", 0, 600, 120, step=10)
+        diet     = st.slider("Diet Quality Score (0-10)", 0.0, 10.0, 6.0, step=0.5,
+                              help="Rate how healthy your diet is from 0 (very poor) to 10 (excellent, rich in vegetables, lean proteins, and whole grains).")
+        sleep    = st.slider("Sleep (h/night)", 3.0, 12.0, 7.5, step=0.5)
+        alcohol  = st.slider("Alcohol (units/week)", 0, 40, 2)
+        screen_h = st.slider("Screen Time (h/day)", 0.0, 16.0, 6.0, step=0.5)
+        smoking  = st.selectbox("Smoking Status", ["Never", "Former", "Current"])
 
         st.markdown("---")
-        if st.button("Voltar ao início", key="pat_back"):
+        
+        submit = st.button("Generate My Report", use_container_width=True)
+        if submit:
+            st.session_state.patient_submitted = True
+            
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("Back to Home", key="pat_back"):
             back_fn()
 
     # Derived
@@ -421,75 +423,96 @@ def show(back_fn):
     # Header
     h_title, h_back = st.columns([7, 1])
     with h_title:
-        st.markdown('<div class="pat-title">🩺 TeaBetes — Explorador de Saúde</div>', unsafe_allow_html=True)
-        st.markdown('<div class="pat-sub">Ajuste os controlos na barra lateral — todos os gráficos atualizam em tempo real.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="pat-title">🩺 TeaBetes — Health Explorer</div>', unsafe_allow_html=True)
+        st.markdown('<div class="pat-sub">Adjust the controls in the sidebar — all charts update in real-time.</div>', unsafe_allow_html=True)
     with h_back:
-        if st.button("← Início", key="pat_back_top"):
+        if st.button("← Home", key="pat_back_top"):
             back_fn()
 
-    # ── Faixa de estado ───────────────────────────────────────────────────────
+    if not st.session_state.get("patient_submitted", False):
+        st.info("Please fill out your health details in the sidebar menu on the left, then click 'Generate My Report' to view your personalized dashboard.")
+        
+        with st.expander("How to find your clinical values?"):
+            st.markdown("""
+            * **HbA1c & Cholesterol:** These are obtained through a standard laboratory blood test requested by your GP.
+            * **Blood Sugar:** Can be measured at home with a glucometer or at your local pharmacy.
+            * **Blood Pressure:** Can be checked using a home blood pressure monitor, at a pharmacy, or during a routine clinic visit.
+            """)
+        return
+
+    # ── Status Banner ─────────────────────────────────────────────────────────
     col_status, col_gauge, col_lifestyle = st.columns([3, 2, 2])
     with col_status:
         st.markdown(f"""<div class="status-card" style="background:{stage_color}cc">
-            <div class="status-lbl">Estado Estimado</div>
+            <div class="status-lbl">Estimated Status</div>
             <div class="status-val">{stage}</div>
             <div class="status-desc">{STAGE_DESC[stage]}</div>
         </div>""", unsafe_allow_html=True)
-        # Weight status badge
+        
         st.markdown(f"""<div style="margin-top:10px">
-            <span style="font-size:.72rem;opacity:.5;text-transform:uppercase;letter-spacing:.06em">Estado de Peso &nbsp;</span>
+            <span style="font-size:.72rem;opacity:.5;text-transform:uppercase;letter-spacing:.06em">Weight Status &nbsp;</span>
             <span class="wstatus-badge" style="background:{ws_color}33;color:{ws_color};border:1px solid {ws_color}55">{ws_label}</span>
-            <span style="font-size:.78rem;opacity:.55;margin-left:8px">IMC {bmi:.1f}</span>
+            <span style="font-size:.78rem;opacity:.55;margin-left:8px">BMI {bmi:.1f}</span>
         </div>""", unsafe_allow_html=True)
-        # Activity level
+        
         pct_who = min(activity / 150 * 100, 100)
         act_color = C_GREEN if activity >= 150 else (C_YELLOW if activity >= 90 else C_RED)
         st.markdown(f"""<div style="margin-top:10px">
-            <span style="font-size:.72rem;opacity:.5;text-transform:uppercase;letter-spacing:.06em">Nivel de Atividade &nbsp;</span>
-            <span class="wstatus-badge" style="background:{act_color}33;color:{act_color};border:1px solid {act_color}55">{activity} min/sem</span>
-            <span style="font-size:.75rem;opacity:.4;margin-left:6px">{pct_who:.0f}% do objetivo OMS</span>
+            <span style="font-size:.72rem;opacity:.5;text-transform:uppercase;letter-spacing:.06em">Activity Level &nbsp;</span>
+            <span class="wstatus-badge" style="background:{act_color}33;color:{act_color};border:1px solid {act_color}55">{activity} min/week</span>
+            <span style="font-size:.75rem;opacity:.4;margin-left:6px">{pct_who:.0f}% of WHO goal</span>
         </div>""", unsafe_allow_html=True)
     with col_gauge:
         chart_gauge(risk, stage_color)
     with col_lifestyle:
         chart_lifestyle_gauge(ls_score)
 
-    # ── Metricas rapidas ──────────────────────────────────────────────────────
-    st.markdown('<div class="sec-title">Os Seus Valores</div>', unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    # ── Quick Metrics ─────────────────────────────────────────────────────────
+    st.markdown('<div class="sec-title">Your Values</div>', unsafe_allow_html=True)
     m1,m2,m3,m4,m5,m6 = st.columns(6)
     with m1: pill("HbA1c",         f"{hba1c:.1f}%",   "< 5.7% normal")
-    with m2: pill("Glicose Jejum",  f"{glucose}",      "70-100 mg/dL")
-    with m3: pill("IMC",            f"{bmi:.1f}",      "18.5-24.9 ideal")
-    with m4: pill("P. Sistólica",   f"{sbp}",          "< 120 mmHg")
-    with m5: pill("Colesterol",     f"{chol}",         "< 200 mg/dL")
-    with m6: pill("Idade",          f"{age}",          f"Grupo: {grp}")
+    with m2: pill("Fasting Sugar", f"{glucose}",      "70-100 mg/dL")
+    with m3: pill("BMI",            f"{bmi:.1f}",     "18.5-24.9 ideal")
+    with m4: pill("Systolic BP",    f"{sbp}",         "< 120 mmHg")
+    with m5: pill("Cholesterol",    f"{chol}",        "< 200 mg/dL")
+    with m6: pill("Age",            f"{age}",         f"Group: {grp}")
 
-    # ── Exercicio & Sedentarismo ──────────────────────────────────────────────
-    st.markdown('<div class="sec-title">Atividade & Sedentarismo</div>', unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    # ── Exercise & Sedentary ──────────────────────────────────────────────────
+    st.markdown('<div class="sec-title">Activity & Sedentary Behaviour</div>', unsafe_allow_html=True)
     ra1, ra2 = st.columns([3, 2])
     with ra1:
         chart_activity_glucose(df, activity, glucose)
         st.markdown(
             '<div style="font-size:.78rem;opacity:.45;margin-top:4px;padding-left:2px">'
-            'A linha horizontal mostra a sua glicose. Veja como a populacao mais ativa tem niveis menores.</div>',
+            'The horizontal line shows your glucose level. Notice how the more active population tends to have lower levels.</div>',
             unsafe_allow_html=True)
     with ra2:
         chart_sedentary_gauge(screen_h, activity)
 
-    # ── Dieta & Atividade ─────────────────────────────────────────────────────
-    st.markdown('<div class="sec-title">Dieta & Atividade vs Referencia</div>', unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    # ── Diet & Activity ───────────────────────────────────────────────────────
+    st.markdown('<div class="sec-title">Diet & Activity vs Reference</div>', unsafe_allow_html=True)
     chart_activity_diet_bar(activity, diet, df)
 
-    # ── Risco por grupo etario + Radar ────────────────────────────────────────
-    st.markdown('<div class="sec-title">O Seu Risco no Contexto</div>', unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    # ── Age Group Risk & Radar ────────────────────────────────────────────────
+    st.markdown('<div class="sec-title">Your Risk in Context</div>', unsafe_allow_html=True)
     rg1, rg2 = st.columns([3, 2])
     with rg1:
         chart_risk_vs_age_group(df, age, risk)
     with rg2:
         chart_radar_lifestyle(diet, activity, sleep, alcohol, smoking)
 
-    # ── Recomendacoes ─────────────────────────────────────────────────────────
-    st.markdown('<div class="sec-title">Recomendacoes Personalizadas</div>', unsafe_allow_html=True)
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    # ── Recommendations ───────────────────────────────────────────────────────
+    st.markdown('<div class="sec-title">Personalised Recommendations</div>', unsafe_allow_html=True)
     good_tips, warn_tips = get_tips(activity, diet, sleep, smoking, alcohol, bmi, risk)
     if warn_tips:
         for t in warn_tips:
@@ -499,5 +522,5 @@ def show(back_fn):
             tip(t, good=True)
 
     st.markdown(
-        "<br><small style='opacity:.28'>Ferramenta indicativa — não substitui avaliação médica profissional.</small>",
+        "<br><small style='opacity:.28'>Indicative tool — does not replace professional medical advice.</small>",
         unsafe_allow_html=True)
