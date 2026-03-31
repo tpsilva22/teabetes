@@ -94,15 +94,15 @@ def chart_stage_pie(df):
         labels=counts.index, values=counts.values,
         hole=0.56,
         marker=dict(
-            colors=[STAGE_COLORS[s] for s in counts.index],
+            colors=[STAGE_COLORS.get(s, C_BLUE) for s in counts.index],
             line=dict(color="rgba(0,0,0,0.4)", width=2),
         ),
         textinfo="label+percent",
         textfont=dict(size=10),
-        hovertemplate="<b>%{label}</b><br>%{value:,} pacientes — %{percent}<extra></extra>",
+        hovertemplate="<b>%{label}</b><br>%{value:,} patients — %{percent}<extra></extra>",
     ))
     fig.update_layout(
-        title=dict(text="Distribuicao de Estadios", font=dict(size=12)),
+        title=dict(text="Stage Distribution", font=dict(size=12)),
         showlegend=False, height=300,
         margin=dict(l=10, r=10, t=40, b=10),
         **PLOTLY_LAYOUT,
@@ -118,19 +118,18 @@ def chart_metabolic_scatter(df, sample=3000):
         color_discrete_map=STAGE_COLORS,
         category_orders={"diabetes_stage": STAGE_ORDER},
         opacity=0.55,
-        labels={"insulin_resistance": "Resistência à Insulina (HOMA-IR)",
-                "hba1c": "HbA1c (%)", "diabetes_stage": "Estádio"},
+        labels={"insulin_resistance": "Insulin Resistance (HOMA-IR)",
+                "hba1c": "HbA1c (%)", "diabetes_stage": "Stage"},
         hover_data=["age", "bmi", "glucose_fasting"],
-        title="Matriz de Risco Metabólico",
+        title="Metabolic Risk Matrix",
     )
-    # Reference lines
     fig.add_vline(x=2.5, line_dash="dot", line_color="rgba(255,255,255,0.25)",
-                  annotation_text="Limiar HOMA-IR 2,5", annotation_font_size=9,
+                  annotation_text="HOMA-IR 2.5 Threshold", annotation_font_size=9,
                   annotation_font_color="rgba(255,255,255,0.45)")
     fig.add_hline(y=6.5, line_dash="dot", line_color="rgba(255,255,255,0.25)",
-                  annotation_text="Limiar HbA1c 6,5%", annotation_font_size=9,
+                  annotation_text="HbA1c 6.5% Threshold", annotation_font_size=9,
                   annotation_font_color="rgba(255,255,255,0.45)")
-    fig.update_layout(height=360, legend_title_text="",
+    fig.update_layout(height=400, legend_title_text="",
                       margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT)
     axis_style(fig)
     st.plotly_chart(fig, use_container_width=True)
@@ -143,7 +142,7 @@ def chart_comorbidities_heatmap(df):
            .dropna())
     fig = go.Figure(go.Heatmap(
         z=agg.values,
-        x=["Pressão Sistólica", "Pressão de Pulso", "Pressão Arterial Média"],
+        x=["Systolic BP", "Pulse Pressure", "Mean Arterial Pressure"],
         y=agg.index.tolist(),
         colorscale="Blues",
         text=agg.round(1).values,
@@ -153,7 +152,7 @@ def chart_comorbidities_heatmap(df):
         showscale=True,
     ))
     fig.update_layout(
-        title="Perfil de Pressão Arterial por Grupo Etário (mmHg)",
+        title="Blood Pressure Profile by Age Group (mmHg)",
         height=280, margin=dict(l=10, r=10, t=44, b=10),
         **PLOTLY_LAYOUT,
     )
@@ -165,12 +164,12 @@ def chart_family_history_boxplot(df):
         df, x="family_history_diabetes", y="diabetes_risk_score",
         color="family_history_diabetes",
         color_discrete_sequence=[C_TEAL, C_ROSE],
-        labels={"family_history_diabetes": "Histórico Familiar",
-                "diabetes_risk_score": "Score de Risco"},
+        labels={"family_history_diabetes": "Family History",
+                "diabetes_risk_score": "Risk Score (0-100 Points)"},
         category_orders={"family_history_diabetes": [0, 1]},
-        title="Impacto do Histórico Familiar no Score de Risco",
+        title="Impact of Family History on Risk Score",
     )
-    fig.update_xaxes(ticktext=["Sem histórico", "Com histórico"], tickvals=[0, 1])
+    fig.update_xaxes(ticktext=["No History", "With History"], tickvals=[0, 1])
     fig.update_layout(height=300, showlegend=False,
                       margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT)
     axis_style(fig)
@@ -183,11 +182,11 @@ def chart_risk_by_diagnosis(df):
         color="diagnosed_diabetes",
         color_discrete_sequence=[C_SAGE, C_ROSE],
         box=True, points=False,
-        labels={"diagnosed_diabetes": "Diagnosticado",
-                "diabetes_risk_score": "Score de Risco"},
-        title="Score de Risco: Diagnosticados vs Não Diagnosticados",
+        labels={"diagnosed_diabetes": "Diagnosed",
+                "diabetes_risk_score": "Risk Score (0-100 Points)"},
+        title="Risk Score: Diagnosed vs Undiagnosed",
     )
-    fig.update_xaxes(ticktext=["Não Diagnosticado", "Diagnosticado"], tickvals=[0, 1])
+    fig.update_xaxes(ticktext=["Undiagnosed", "Diagnosed"], tickvals=[0, 1])
     fig.update_layout(height=300, showlegend=False,
                       margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT)
     axis_style(fig)
@@ -197,41 +196,41 @@ def chart_risk_by_diagnosis(df):
 def chart_hba1c_by_stage(df):
     avg = (df.groupby("diabetes_stage")["hba1c"].mean()
            .reindex(STAGE_ORDER).dropna().reset_index())
-    avg.columns = ["estadio", "hba1c"]
+    avg.columns = ["stage", "hba1c"]
     fig = px.bar(
-        avg, x="estadio", y="hba1c",
-        color="estadio", color_discrete_map=STAGE_COLORS,
+        avg, x="stage", y="hba1c",
+        color="stage", color_discrete_map=STAGE_COLORS,
         text=avg["hba1c"].round(2),
-        labels={"estadio": "", "hba1c": "HbA1c médio (%)"},
-        title="HbA1c Médio por Estádio",
+        labels={"stage": "", "hba1c": "Average HbA1c (%)"},
+        title="Average HbA1c by Stage",
     )
     fig.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
     fig.add_hline(y=6.5, line_dash="dot", line_color="rgba(255,255,255,0.3)",
-                  annotation_text="Limiar diagnóstico 6,5%", annotation_font_size=9)
+                  annotation_text="Diagnostic threshold 6.5%", annotation_font_size=9)
     fig.update_layout(height=300, showlegend=False,
                       margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT)
     axis_style(fig)
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 
-def chart_corr_heatmap(df):
-    cols = ["insulin_resistance", "hba1c", "glucose_fasting", "glucose_postprandial",
-            "bmi", "obesity_index", "pulse_pressure", "map",
-            "cholesterol_total", "ratio_ldl_hdl", "diabetes_risk_score"]
+def chart_corr_heatmap(df, cols):
+    if not cols or len(cols) < 2:
+        st.info("Please select at least 2 variables to generate the correlation heatmap.")
+        return
+        
     corr = df[cols].corr()
-    mask = np.triu(np.ones_like(corr, dtype=bool), k=1)
-    z    = corr.where(~mask)
     fig  = go.Figure(go.Heatmap(
-        z=z.values, x=z.columns, y=z.index,
+        z=corr.values, x=corr.columns, y=corr.index,
         colorscale="RdBu_r", zmid=0, zmin=-1, zmax=1,
-        text=z.round(2).values, texttemplate="%{text}",
+        text=corr.round(2).values, texttemplate="%{text}",
         textfont=dict(size=8),
         hovertemplate="%{y} vs %{x}<br>r = %{z:.3f}<extra></extra>",
         showscale=True,
     ))
     fig.update_layout(
-        title="Correlações entre Variáveis Metabólicas",
-        height=440, margin=dict(l=130, r=10, t=44, b=120),
+        title="Correlations Between Selected Variables",
+        height=min(440 + len(cols)*10, 800), 
+        margin=dict(l=130, r=10, t=44, b=120),
         **PLOTLY_LAYOUT,
     )
     fig.update_xaxes(tickangle=-40, tickfont=dict(size=9))
@@ -239,19 +238,46 @@ def chart_corr_heatmap(df):
     st.plotly_chart(fig, use_container_width=True)
 
 
-def chart_variable_explorer(df, x_var, y_var, color_var, sample_n):
+def chart_variable_explorer(df, x_var, y_var, color_var, sample_n, chart_type):
     s = df.sample(min(sample_n, len(df)), random_state=42)
     color_map = STAGE_COLORS if color_var == "diabetes_stage" else None
-    fig = px.scatter(
-        s, x=x_var, y=y_var, color=color_var,
-        color_discrete_map=color_map,
-        opacity=0.55,
-        trendline="lowess", trendline_scope="overall",
-        trendline_color_override="rgba(255,255,255,0.6)",
-        labels={"diabetes_stage": "Estádio", "diagnosed_diabetes": "Diagnosticado",
-                "age_groups": "Grupo Etário", "weight_status": "Estado de Peso"},
-        title=f"{x_var}  vs  {y_var}",
-    )
+    
+    labels_map = {"diabetes_stage": "Stage", "diagnosed_diabetes": "Diagnosed",
+                  "age_groups": "Age Group", "weight_status": "Weight Status"}
+                  
+    if chart_type == "Scatter":
+        fig = px.scatter(
+            s, x=x_var, y=y_var, color=color_var,
+            color_discrete_map=color_map,
+            opacity=0.55,
+            trendline="lowess", trendline_scope="overall",
+            trendline_color_override="rgba(255,255,255,0.6)",
+            labels=labels_map,
+            title=f"{x_var} vs {y_var}",
+        )
+    elif chart_type == "Box":
+        fig = px.box(
+            s, x=x_var, y=y_var, color=color_var,
+            color_discrete_map=color_map,
+            labels=labels_map,
+            title=f"{y_var} Distribution by {x_var}",
+        )
+    elif chart_type == "Violin":
+        fig = px.violin(
+            s, x=x_var, y=y_var, color=color_var,
+            color_discrete_map=color_map,
+            box=True,
+            labels=labels_map,
+            title=f"{y_var} Density by {x_var}",
+        )
+    elif chart_type == "Bar":
+        fig = px.bar(
+            s, x=x_var, y=y_var, color=color_var,
+            color_discrete_map=color_map,
+            labels=labels_map,
+            title=f"{y_var} by {x_var}",
+        )
+        
     fig.update_layout(height=400, legend_title_text="",
                       margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT)
     axis_style(fig)
@@ -265,18 +291,16 @@ def show(logout_fn):
 
     # Sidebar
     with st.sidebar:
-        st.markdown("### Filtros")
-        st.markdown('<div class="sidebar-sec">Populacao</div>', unsafe_allow_html=True)
-        stages = st.multiselect("Estádio", STAGE_ORDER, default=STAGE_ORDER)
-        age_groups = st.multiselect("Grupo Etário",
-                                    options=["Young Adult","Adult","Senior Adult","Elderly"],
-                                    default=["Young Adult","Adult","Senior Adult","Elderly"])
-        st.markdown('<div class="sidebar-sec">Clinico</div>', unsafe_allow_html=True)
-        age_range = st.slider("Idade", int(df_full.age.min()), int(df_full.age.max()),
+        st.markdown("### Filters")
+        st.markdown('<div class="sidebar-sec">Population</div>', unsafe_allow_html=True)
+        stages = st.multiselect("Stage", STAGE_ORDER, default=["No Diabetes"])
+        
+        st.markdown('<div class="sidebar-sec">Clinical</div>', unsafe_allow_html=True)
+        age_range = st.slider("Age", int(df_full.age.min()), int(df_full.age.max()),
                               (int(df_full.age.min()), int(df_full.age.max())))
         bmi_range = st.slider("BMI", float(df_full.bmi.min()), float(df_full.bmi.max()),
                               (float(df_full.bmi.min()), float(df_full.bmi.max())), step=0.5)
-        genders = st.multiselect("Género", sorted(df_full.gender.unique()),
+        genders = st.multiselect("Gender", sorted(df_full.gender.unique()),
                                  default=sorted(df_full.gender.unique()))
         st.markdown("---")
         if st.button("Logout", key="doc_logout"):
@@ -284,7 +308,6 @@ def show(logout_fn):
 
     df = df_full[
         df_full["diabetes_stage"].isin(stages) &
-        df_full["age_groups"].isin(age_groups) &
         df_full["age"].between(*age_range) &
         df_full["bmi"].between(*bmi_range) &
         df_full["gender"].isin(genders)
@@ -294,104 +317,115 @@ def show(logout_fn):
     col_title, col_btn = st.columns([7, 1])
     with col_title:
         st.markdown(
-            '<div class="doc-title">🩺 TeaBetes <span class="role-badge">MÉDICO</span></div>',
+            '<div class="doc-title">🩺 TeaBetes <span class="role-badge">DOCTOR</span></div>',
             unsafe_allow_html=True)
         st.markdown(
-            f'<div class="doc-sub">{st.session_state.name} &nbsp;·&nbsp; {len(df):,} pacientes na seleção atual</div>',
+            f'<div class="doc-sub">{st.session_state.name} &nbsp;·&nbsp; {len(df):,} patients in current selection</div>',
             unsafe_allow_html=True)
     with col_btn:
         if st.button("Logout →", key="doc_logout_top"):
             logout_fn()
 
     if df.empty:
-        st.warning("Nenhum paciente corresponde aos filtros selecionados.")
+        st.warning("No patients match the selected filters.")
         return
 
     # ── KPIs ──────────────────────────────────────────────────────────────────
     pct_ir      = (df["insulin_resistance"] > 2.5).mean() * 100
     avg_hba1c   = df["hba1c"].mean()
-    avg_pp_50   = df[df["age"] > 50]["pulse_pressure"].mean()
+    
+    df_over_50  = df[df["age"] > 50]
+    avg_pp_50   = df_over_50["pulse_pressure"].mean() if not df_over_50.empty else None
+    
     pct_diag    = df["diagnosed_diabetes"].mean() * 100
 
     c1, c2, c3, c4 = st.columns(4)
-    with c1: kpi("Resistência à Insulina",
+    with c1: kpi("Insulin Resistance",
                  fmt_pct(pct_ir),
-                 "pacientes com HOMA-IR > 2,5",
+                 "patients with HOMA-IR > 2.5",
                  alert=pct_ir > 40)
-    with c2: kpi("HbA1c Médio",
+    with c2: kpi("Average HbA1c",
                  fmt_num(avg_hba1c) + "%",
-                 "referência saudável < 5,7%",
+                 "healthy reference < 5.7%",
                  alert=avg_hba1c > 6.5)
-    with c3: kpi("Alerta Cardiovascular",
-                 fmt_num(avg_pp_50) + " mmHg",
-                 "pressão de pulso média em >50 anos",
-                 alert=avg_pp_50 > 50)
-    with c4: kpi("Diagnosticados",
+    with c3: 
+        pp_val = fmt_num(avg_pp_50) + " mmHg" if avg_pp_50 is not None else "N/A"
+        kpi("Cardiovascular Alert",
+            pp_val,
+            "mean pulse pressure in >50 years",
+            alert=avg_pp_50 is not None and avg_pp_50 > 50)
+    with c4: kpi("Diagnosed",
                  fmt_pct(pct_diag),
-                 "com diabetes diagnosticada")
+                 "with diagnosed diabetes")
 
-    # ── Linha 1: Scatter metabolico + Pie estadios ────────────────────────────
-    st.markdown('<div class="sec-title">Risco Metabolico</div>', unsafe_allow_html=True)
-    r1a, r1b = st.columns([3, 2])
+    # ── Row 1: Metabolic Risk (Matrix full width, then Box/Pie below) ─────────
+    st.markdown('<div class="sec-title">Metabolic Risk</div>', unsafe_allow_html=True)
+    chart_metabolic_scatter(df)
+    clinical_note(
+        "The upper right zone (HOMA-IR > 2.5 and HbA1c > 6.5%) represents "
+        "the critical transition area where insulin resistance becomes "
+        "clinically significant. Patients in this zone require intensive monitoring."
+    )
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    r1a, r1b = st.columns(2)
     with r1a:
-        chart_metabolic_scatter(df)
-        clinical_note(
-            "A zona superior direita (HOMA-IR > 2.5 e HbA1c > 6.5%) representa "
-            "a area critica de transicao onde a resistencia insulinica se torna "
-            "clinicamente significativa. Pacientes nessa zona requerem monitorizacao intensiva."
-        )
-    with r1b:
         chart_stage_pie(df)
+    with r1b:
         chart_family_history_boxplot(df)
 
-    # ── Linha 2: Comorbidades + diagnostico ──────────────────────────────────
-    st.markdown('<div class="sec-title">Comorbidades & Diagnostico</div>', unsafe_allow_html=True)
+    # ── Row 2: Comorbidities & Diagnosis ──────────────────────────────────────
+    st.markdown('<div class="sec-title">Comorbidities & Diagnosis</div>', unsafe_allow_html=True)
     r2a, r2b = st.columns([3, 2])
     with r2a:
         chart_comorbidities_heatmap(df)
         clinical_note(
-            "A rigidez arterial aumenta com a idade — a pressao de pulso elevada "
-            "em adultos mais velhos e um indicador independente de risco metabolico "
-            "e cardiovascular."
+            "Arterial stiffness increases with age — elevated pulse pressure "
+            "in older adults is an independent indicator of metabolic "
+            "and cardiovascular risk."
         )
     with r2b:
         chart_risk_by_diagnosis(df)
 
-    # ── Linha 3: HbA1c + Correlacoes ─────────────────────────────────────────
-    st.markdown('<div class="sec-title">Analise Clinica Detalhada</div>', unsafe_allow_html=True)
+    # ── Row 3: HbA1c & Correlations ───────────────────────────────────────────
+    st.markdown('<div class="sec-title">Detailed Clinical Analysis</div>', unsafe_allow_html=True)
     chart_hba1c_by_stage(df)
-    chart_corr_heatmap(df)
+    
+    st.markdown("#### Correlation Heatmap")
+    all_num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    default_corr_cols = ["insulin_resistance", "hba1c", "glucose_fasting", "glucose_postprandial",
+                         "bmi", "obesity_index", "pulse_pressure", "map",
+                         "cholesterol_total", "ratio_ldl_hdl", "diabetes_risk_score"]
+                         
+    selected_corr_cols = st.multiselect("Select Variables for Correlation Matrix", all_num_cols, default=default_corr_cols)
+    chart_corr_heatmap(df, selected_corr_cols)
 
-    # ── Explorador interativo ─────────────────────────────────────────────────
-    st.markdown('<div class="sec-title">Explorador de Variaveis</div>', unsafe_allow_html=True)
+    # ── Interactive Explorer ──────────────────────────────────────────────────
+    st.markdown('<div class="sec-title">Variable Explorer</div>', unsafe_allow_html=True)
 
-    num_cols = ["age", "bmi", "hba1c", "glucose_fasting", "glucose_postprandial",
-                "insulin_resistance", "glycemia_spike", "obesity_index",
-                "pulse_pressure", "map", "ratio_ldl_hdl",
-                "cholesterol_total", "hdl_cholesterol", "ldl_cholesterol",
-                "systolic_bp", "diastolic_bp", "diabetes_risk_score",
-                "physical_activity_minutes_per_week", "diet_score",
-                "sleep_hours_per_day", "screen_time_hours_per_day"]
     cat_cols = ["diabetes_stage", "diagnosed_diabetes", "age_groups",
                 "weight_status", "gender"]
 
-    ec1, ec2, ec3, ec4 = st.columns([2, 2, 2, 1])
+    ec1, ec2, ec3, ec4, ec5 = st.columns([2, 2, 2, 2, 2])
     with ec1:
-        x_var = st.selectbox("Eixo X", num_cols,
-                             index=num_cols.index("insulin_resistance"))
+        x_var = st.selectbox("X-Axis", all_num_cols,
+                             index=all_num_cols.index("insulin_resistance") if "insulin_resistance" in all_num_cols else 0)
     with ec2:
-        y_var = st.selectbox("Eixo Y", num_cols,
-                             index=num_cols.index("hba1c"))
+        y_var = st.selectbox("Y-Axis", all_num_cols,
+                             index=all_num_cols.index("hba1c") if "hba1c" in all_num_cols else 0)
     with ec3:
-        color_var = st.selectbox("Cor", cat_cols,
+        color_var = st.selectbox("Colour", cat_cols,
                                  index=cat_cols.index("diabetes_stage"))
     with ec4:
-        sample_n = st.slider("Amostra", 500, min(8000, len(df)), 2000, step=500)
+        chart_type = st.selectbox("Chart Type", ["Scatter", "Box", "Violin", "Bar"])
+    with ec5:
+        sample_n = st.slider("Patient Sample Size", 500, min(8000, len(df)), 2000, step=500)
 
-    chart_variable_explorer(df, x_var, y_var, color_var, sample_n)
+    chart_variable_explorer(df, x_var, y_var, color_var, sample_n, chart_type)
 
     # Raw data
-    with st.expander("Explorar dados brutos"):
-        cols_show = st.multiselect("Colunas", list(df.columns), default=list(df.columns[:12]))
+    with st.expander("Explore Raw Data"):
+        cols_show = st.multiselect("Columns", list(df.columns), default=list(df.columns))
         st.dataframe(df[cols_show].head(1000), use_container_width=True, height=280)
-        st.caption(f"{len(df):,} registos filtrados — a mostrar até 1000.")
+        st.caption(f"{len(df):,} filtered records — showing up to 1000.")
