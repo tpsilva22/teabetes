@@ -16,7 +16,7 @@ STAGE_COLORS = {
 AGE_ORDER    = ["Young Adult", "Adult", "Senior Adult", "Elderly"]
 WEIGHT_ORDER = ["Underweight", "Normal", "Overweight", "Obese"]
 
-@st.cache_data(show_spinner="A carregar dados...")
+@st.cache_data(show_spinner="Loading data...")
 def load_data() -> pd.DataFrame:
     df = pd.read_csv(DATA_PATH)
     df["sedentary_ratio"] = df["screen_time_hours_per_day"] / (
