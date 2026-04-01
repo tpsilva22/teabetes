@@ -89,7 +89,7 @@ def show_landing():
         </div>
         """, unsafe_allow_html=True)
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-        if st.button("Explore without an account", key="go_patient", use_container_width=True):
+        if st.button("Explore without an account", key="go_patient", width="stretch"):
             st.session_state.view = "patient"; st.rerun()
 
     with card2:
@@ -100,7 +100,7 @@ def show_landing():
         </div>
         """, unsafe_allow_html=True)
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-        if st.button("Login as Doctor", key="go_login", use_container_width=True):
+        if st.button("Login as Doctor", key="go_login", width="stretch"):
             st.session_state.view = "login"; st.rerun()
 
 

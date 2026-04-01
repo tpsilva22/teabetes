@@ -117,7 +117,7 @@ def chart_gauge(value, color):
         },
     ))
     fig.update_layout(height=200, margin=dict(l=20, r=20, t=40, b=10), **PLOTLY_LAYOUT)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_lifestyle_gauge(score):
     color = C_GREEN if score >= 7 else (C_YELLOW if score >= 4 else C_RED)
@@ -132,7 +132,7 @@ def chart_lifestyle_gauge(score):
         },
     ))
     fig.update_layout(height=200, margin=dict(l=20, r=20, t=40, b=10), **PLOTLY_LAYOUT)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_activity_diet_bar(activity, diet, df):
     pop_act_med  = df["physical_activity_minutes_per_week"].median()
@@ -166,7 +166,7 @@ def chart_activity_diet_bar(activity, diet, df):
         barmode="overlay", height=200, xaxis=dict(showgrid=False, showticklabels=False),
         margin=dict(l=140, r=60, t=50, b=10), **PLOTLY_LAYOUT, hovermode="closest"
     )
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_activity_glucose(df, user_activity, user_glucose):
     bins = [0, 60, 120, 180, 240, 600]
@@ -184,7 +184,7 @@ def chart_activity_glucose(df, user_activity, user_glucose):
     fig.add_hline(y=user_glucose, line_dash="dot", line_color=C_WARM, line_width=2, annotation_text=f"Your Glucose: {user_glucose} mg/dL", annotation_font_size=10, annotation_font_color=C_WARM)
     fig.update_layout(title="Activity vs Fasting Blood Sugar", xaxis_title="Physical Activity (min/week)", yaxis_title="Median Fasting Glucose (mg/dL)", height=300, margin=dict(l=50, r=10, t=50, b=50), **PLOTLY_LAYOUT)
     axis_style(fig)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_risk_vs_age_group(df, user_age, user_risk):
     grp = age_group(user_age)
@@ -197,7 +197,7 @@ def chart_risk_vs_age_group(df, user_age, user_risk):
     fig.add_hline(y=user_risk, line_dash="dot", line_color=C_WARM, line_width=2, annotation_text=f"Your Risk: {user_risk:.0f}", annotation_font_size=10, annotation_font_color=C_WARM, annotation_position="bottom right")
     fig.update_layout(title=f"Your Risk vs Age Group (Your Group: {grp})", yaxis_title="Median Risk Score", height=280, margin=dict(l=50, r=10, t=60, b=50), **PLOTLY_LAYOUT)
     axis_style(fig)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_sedentary_gauge(screen_h, activity):
     ratio = min(screen_h / (activity / 60 + 0.1), 20)
@@ -213,7 +213,7 @@ def chart_sedentary_gauge(screen_h, activity):
         },
     ))
     fig.update_layout(height=200, margin=dict(l=20, r=20, t=50, b=10), **PLOTLY_LAYOUT)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_radar_lifestyle(diet, activity, sleep, alcohol, smoking):
     cats = ["Diet", "Exercise", "Sleep", "Alcohol", "Smoking"]
@@ -226,7 +226,7 @@ def chart_radar_lifestyle(diet, activity, sleep, alcohol, smoking):
         polar=dict(radialaxis=dict(range=[0, 10], showticklabels=True, tickfont=dict(size=8), gridcolor="rgba(255,255,255,0.1)"), angularaxis=dict(gridcolor="rgba(255,255,255,0.1)"), bgcolor="rgba(0,0,0,0)"),
         title="Lifestyle Profile (10 is best)", height=300, showlegend=False, margin=dict(l=40, r=40, t=50, b=20), **PLOTLY_LAYOUT,
     )
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_bmi_percentile(bmi, df):
     fig = px.histogram(
@@ -236,7 +236,7 @@ def chart_bmi_percentile(bmi, df):
     fig.add_vline(x=bmi, line_dash="solid", line_color=C_WARM, line_width=3, annotation_text=f"Your BMI: {bmi:.1f}", annotation_font_color=C_WARM)
     fig.update_layout(height=280, margin=dict(l=20, r=20, t=50, b=30), **PLOTLY_LAYOUT)
     axis_style(fig)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_sleep_risk(sleep, risk, df):
     agg = df.groupby("sleep_hours_per_day")["diabetes_risk_score"].mean().reset_index()
@@ -249,7 +249,7 @@ def chart_sleep_risk(sleep, risk, df):
     fig.add_scatter(x=[sleep], y=[risk], mode="markers", marker=dict(color=C_WARM, size=12, line=dict(width=2, color="white")), name="You", hovertemplate=f"Sleep: {sleep}h<br>Your Risk: {risk}<extra></extra>")
     fig.update_layout(height=280, showlegend=False, margin=dict(l=50, r=20, t=50, b=30), **PLOTLY_LAYOUT)
     axis_style(fig)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def get_tips(activity, diet, sleep, smoking, alcohol, bmi, risk, hba1c, sbp, chol):
     tips = []
@@ -310,7 +310,7 @@ def show(back_fn):
         smoking  = st.selectbox("Smoking Status", ["Never", "Former", "Current"], help="Current relationship with tobacco.")
 
         st.markdown("---")
-        submit = st.button("Generate My Report", use_container_width=True)
+        submit = st.button("Generate My Report", width="stretch")
         if submit: st.session_state.patient_submitted = True
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("Back to Home", key="pat_back"): back_fn()
