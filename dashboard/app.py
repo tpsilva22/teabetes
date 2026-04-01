@@ -37,8 +37,6 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 .login-title { font-family:'Lora',serif; font-size:1.6rem;
                color:#4da6d9; text-align:center; margin-bottom:4px; }
 .login-sub   { text-align:center; opacity:.45; font-size:.82rem; margin-bottom:26px; }
-.login-box   { border:1px solid rgba(128,128,128,.2); border-radius:16px;
-               padding:36px 32px; box-shadow:0 6px 32px rgba(0,0,0,.14); }
 .err-box     { background:rgba(220,38,38,.1); border:1px solid rgba(220,38,38,.3);
                color:#f87171; padding:10px 14px; border-radius:8px;
                font-size:.84rem; margin-bottom:10px; }
@@ -124,34 +122,31 @@ def show_login():
                 compare risk groups by age, and explore the complete dataset
                 with interactive charts.
             </div>
-            <div style="opacity:.3;font-size:.76rem;border-top:1px solid rgba(128,128,128,.2);padding-top:14px">
-                Demo &mdash; user: <code>admin</code> &nbsp;/&nbsp; password: <code>admin</code>
-            </div>
         </div>
         """, unsafe_allow_html=True)
 
     with col_form:
-        st.markdown("<div style='height:2.5rem'></div>", unsafe_allow_html=True)
-        st.markdown('<div class="login-box">', unsafe_allow_html=True)
-        st.markdown('<div class="login-title">🩺 TeaBetes</div>', unsafe_allow_html=True)
-        st.markdown('<div class="login-sub">Healthcare Professionals</div>', unsafe_allow_html=True)
+        st.markdown("<div style='height:1.5rem'></div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown('<div class="login-title">🩺 TeaBetes</div>', unsafe_allow_html=True)
+            st.markdown('<div class="login-sub">Healthcare Professionals</div>', unsafe_allow_html=True)
 
-        username = st.text_input("User", placeholder="admin", key="login_user")
-        password = st.text_input("Password", type="password", placeholder="••••••••", key="login_pw")
+            username = st.text_input("User", placeholder="Enter your username", key="login_user")
+            password = st.text_input("Password", type="password", placeholder="••••••••", key="login_pw")
 
-        if st.session_state.get("login_error"):
-            st.markdown('<div class="err-box">Incorrect credentials.</div>', unsafe_allow_html=True)
+            if st.session_state.get("login_error"):
+                st.markdown('<div class="err-box">Incorrect credentials.</div>', unsafe_allow_html=True)
 
-        if st.button("Login", key="do_login"):
-            if do_login(username, password):
-                st.session_state.login_error = False
-                st.session_state.view = "doctor"
-                st.rerun()
-            else:
-                st.session_state.login_error = True
-                st.rerun()
+            if st.button("Login", key="do_login"):
+                if do_login(username, password):
+                    st.session_state.login_error = False
+                    st.session_state.view = "doctor"
+                    st.rerun()
+                else:
+                    st.session_state.login_error = True
+                    st.rerun()
 
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
         if st.button("Back to Home", key="back_login"):
             st.session_state.view = "landing"
             st.session_state.login_error = False
