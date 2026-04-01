@@ -70,7 +70,7 @@ def chart_stage_pie(df):
         hovertemplate="<b>%{label}</b><br>%{value:,} patients — %{percent}<extra></extra>",
     ))
     fig.update_layout(title=dict(text="Stage Distribution", font=dict(size=12)), showlegend=False, height=300, margin=dict(l=10, r=10, t=40, b=10), **PLOTLY_LAYOUT)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_age_histogram(df):
     fig = px.histogram(
@@ -81,7 +81,7 @@ def chart_age_histogram(df):
     )
     fig.update_layout(height=300, margin=dict(l=10, r=10, t=40, b=10), **PLOTLY_LAYOUT)
     axis_style(fig)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_metabolic_scatter(df, sample=3000):
     s = df.sample(min(sample, len(df)), random_state=42)
@@ -95,7 +95,7 @@ def chart_metabolic_scatter(df, sample=3000):
     fig.add_hline(y=6.5, line_dash="dot", line_color="rgba(255,255,255,0.25)", annotation_text="HbA1c 6.5% Threshold", annotation_font_size=9, annotation_font_color="rgba(255,255,255,0.45)")
     fig.update_layout(height=400, legend_title_text="", margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT)
     axis_style(fig)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 def chart_comorbidities_heatmap(df):
     agg = df.groupby("age_groups", observed=True)[["systolic_bp", "pulse_pressure", "map"]].mean().reindex(AGE_ORDER).dropna()
@@ -105,7 +105,7 @@ def chart_comorbidities_heatmap(df):
         hovertemplate="%{y} — %{x}<br><b>%{z:.1f} mmHg</b><extra></extra>", showscale=True,
     ))
     fig.update_layout(title="Blood Pressure Profile by Age Group (mmHg)", height=280, margin=dict(l=10, r=10, t=44, b=10), **PLOTLY_LAYOUT)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_family_history_boxplot(df):
     fig = px.box(
@@ -121,7 +121,7 @@ def chart_family_history_boxplot(df):
         margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT
     )
     axis_style(fig)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_risk_by_diagnosis(df):
     fig = px.violin(
@@ -137,7 +137,7 @@ def chart_risk_by_diagnosis(df):
         margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT
     )
     axis_style(fig)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_hba1c_by_stage(df):
     avg = df.groupby("diabetes_stage")["hba1c"].mean().reindex(STAGE_ORDER).dropna().reset_index()
@@ -150,7 +150,7 @@ def chart_hba1c_by_stage(df):
     fig.add_hline(y=6.5, line_dash="dot", line_color="rgba(255,255,255,0.3)", annotation_text="Diagnostic threshold 6.5%", annotation_font_size=9)
     fig.update_layout(height=300, showlegend=False, margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT)
     axis_style(fig)
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_corr_heatmap(df, cols):
     if not cols or len(cols) < 2:
@@ -165,7 +165,7 @@ def chart_corr_heatmap(df, cols):
     fig.update_layout(title="Correlations Between Selected Variables", height=min(440 + len(cols)*10, 800), margin=dict(l=130, r=10, t=44, b=120), **PLOTLY_LAYOUT)
     fig.update_xaxes(tickangle=-40, tickfont=dict(size=9))
     fig.update_yaxes(tickfont=dict(size=9))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 def chart_variable_explorer(df, x_var, y_var, color_var, sample_n, chart_type):
     s = df.sample(min(sample_n, len(df)), random_state=42)
@@ -181,7 +181,7 @@ def chart_variable_explorer(df, x_var, y_var, color_var, sample_n, chart_type):
         fig = px.bar(s, x=x_var, y=y_var, color=color_var, color_discrete_map=color_map, labels=labels_map, title=f"{y_var} by {x_var}")
     fig.update_layout(height=400, legend_title_text="", margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT)
     axis_style(fig)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
 def show(logout_fn):
     inject_styles()
@@ -279,5 +279,5 @@ def show(logout_fn):
 
     with st.expander("Explore Raw Data"):
         cols_show = st.multiselect("Columns", list(df.columns), default=list(df.columns))
-        st.dataframe(df[cols_show].head(1000), use_container_width=True, height=280)
+        st.dataframe(df[cols_show].head(1000), width="stretch", height=280)
         st.caption(f"{len(df):,} filtered records — showing up to 1000.")
