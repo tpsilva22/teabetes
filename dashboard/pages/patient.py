@@ -143,27 +143,49 @@ def chart_activity_diet_bar(activity, diet, df):
     ref_vals   = [150, 7]
 
     fig = go.Figure()
+    y_positions = list(range(len(categories)))
+
     for i, (cat, uv, pv, rv) in enumerate(zip(categories, user_vals, pop_vals, ref_vals)):
         color = C_GREEN if uv >= rv else (C_YELLOW if uv >= rv * 0.6 else C_RED)
         fig.add_trace(go.Bar(
-            name=cat, x=[uv], y=[cat], orientation="h", marker_color=color, showlegend=False,
+            name=cat, x=[uv], y=[i], orientation="h", marker_color=color, showlegend=False,
             hovertemplate=f"<b>{cat}</b><br>Your Value: {uv}<extra></extra>",
             text=f"{uv}", textposition="outside", textfont=dict(size=11, color=color),
         ))
+
+        # Reference lines are regular traces so they support hover values.
         fig.add_trace(go.Scatter(
-            x=[pv, pv], y=[i-0.4, i+0.4], mode="lines",
-            line=dict(color="rgba(255,255,255,0.5)", width=2, dash="dot"),
-            hovertemplate=f"Population Average: {pv:.1f}<extra></extra>", showlegend=False, name="Pop. Avg"
+            x=[pv, pv],
+            y=[i - 0.32, i + 0.32],
+            mode="lines",
+            line=dict(color="rgba(255,255,255,0.55)", width=2, dash="dot"),
+            hovertemplate=f"<b>{cat}</b><br>Population Average: {pv:.1f}<extra></extra>",
+            showlegend=False,
         ))
         fig.add_trace(go.Scatter(
-            x=[rv, rv], y=[i-0.4, i+0.4], mode="lines",
-            line=dict(color="rgba(255,255,255,0.85)", width=2),
-            hovertemplate=f"Recommended Value: {rv:.1f}<extra></extra>", showlegend=False, name="Target"
+            x=[rv, rv],
+            y=[i - 0.32, i + 0.32],
+            mode="lines",
+            line=dict(color="rgba(255,255,255,0.9)", width=2),
+            hovertemplate=f"<b>{cat}</b><br>Recommended Value: {rv:.1f}<extra></extra>",
+            showlegend=False,
         ))
+
+    x_max = max(max(user_vals), max(pop_vals), max(ref_vals)) * 1.25
 
     fig.update_layout(
         title="Your Level vs Recommended (solid line) and Population Average (dotted)",
-        barmode="overlay", height=200, xaxis=dict(showgrid=False, showticklabels=False),
+        barmode="overlay",
+        height=220,
+        xaxis=dict(showgrid=False, showticklabels=False, range=[0, x_max]),
+        yaxis=dict(
+            tickmode="array",
+            tickvals=y_positions,
+            ticktext=categories,
+            range=[-0.6, len(categories) - 0.4],
+            showgrid=False,
+            zeroline=False,
+        ),
         margin=dict(l=140, r=60, t=50, b=10), **PLOTLY_LAYOUT, hovermode="closest"
     )
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
