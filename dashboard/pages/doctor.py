@@ -108,16 +108,18 @@ def chart_comorbidities_heatmap(df):
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_family_history_boxplot(df):
+    s = df.copy()
+    s["family_history_label"] = s["family_history_diabetes"].map({0: "No Family History", 1: "With Family History"})
     fig = px.box(
-        df, x="family_history_diabetes", y="diabetes_risk_score", color="family_history_diabetes",
+        s, x="family_history_label", y="diabetes_risk_score", color="family_history_label",
         color_discrete_sequence=[C_TEAL, C_ROSE],
-        labels={"family_history_diabetes": "Family History", "diabetes_risk_score": "Risk Score (0-100 Points)"},
-        category_orders={"family_history_diabetes": [0, 1]}, title="Impact of Family History on Risk Score"
+        labels={"family_history_label": "Family History", "diabetes_risk_score": "Clinical Risk Score"},
+        category_orders={"family_history_label": ["No Family History", "With Family History"]}, title="Impact of Family History on Risk Score"
     )
-    fig.update_xaxes(ticktext=["No History", "With History"], tickvals=[0, 1], title="")
+    fig.update_yaxes(title="Risk Score (0-100 Points)")
+    fig.update_xaxes(title="")
     fig.update_layout(
-        height=300, showlegend=True, 
-        legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, title_text="History"),
+        height=300, showlegend=False,
         margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT
     )
     axis_style(fig)
@@ -132,8 +134,7 @@ def chart_risk_by_diagnosis(df):
     )
     fig.update_xaxes(ticktext=["Undiagnosed", "Diagnosed"], tickvals=[0, 1], title="")
     fig.update_layout(
-        height=300, showlegend=True,
-        legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, title_text="Diagnosis"),
+        height=300, showlegend=False,
         margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT
     )
     axis_style(fig)
