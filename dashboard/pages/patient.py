@@ -16,6 +16,8 @@ C_RED    = "#e74c3c"
 C_ORANGE = "#e67e22"
 C_BLUE   = "#2980b9"
 C_WARM   = "#e8a87c"
+C_SAGE   = "#5a8a6a"
+C_AMBER  = "#b8860b"
 
 PLOTLY_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)",
@@ -92,8 +94,50 @@ STAGE_DESC = {
     "Diabetes": "Your values suggest diabetes. Consult your doctor for confirmation and a treatment plan.",
 }
 
-def pill(label, value, ref=""):
-    st.markdown(f'<div class="mpill"><div class="mpill-lbl">{label}</div><div class="mpill-val">{value}</div><div class="mpill-ref">{ref}</div></div>', unsafe_allow_html=True)
+def pill(label, value, ref="", tone=None):
+    value_color = tone or "#f0a868"
+    st.markdown(
+        f'<div class="mpill"><div class="mpill-lbl">{label}</div><div class="mpill-val" style="color:{value_color}">{value}</div><div class="mpill-ref">{ref}</div></div>',
+        unsafe_allow_html=True,
+    )
+
+def zone_color(zone):
+    return {"good": C_SAGE, "mid": C_AMBER, "bad": C_RED}.get(zone, C_WARM)
+
+def zone_hba1c(v):
+    if v < 5.7:
+        return "good"
+    if v < 6.5:
+        return "mid"
+    return "bad"
+
+def zone_glucose(v):
+    if 70 <= v <= 100:
+        return "good"
+    if (60 <= v < 70) or (100 < v < 126):
+        return "mid"
+    return "bad"
+
+def zone_bmi(v):
+    if 18.5 <= v <= 24.9:
+        return "good"
+    if (17.0 <= v < 18.5) or (25.0 <= v < 30.0):
+        return "mid"
+    return "bad"
+
+def zone_sbp(v):
+    if v < 120:
+        return "good"
+    if v < 130:
+        return "mid"
+    return "bad"
+
+def zone_chol(v):
+    if v < 200:
+        return "good"
+    if v < 240:
+        return "mid"
+    return "bad"
 
 def tip(text, good=False):
     cls = "tip tip-good" if good else "tip"
@@ -143,27 +187,49 @@ def chart_activity_diet_bar(activity, diet, df):
     ref_vals   = [150, 7]
 
     fig = go.Figure()
+    y_positions = list(range(len(categories)))
+
     for i, (cat, uv, pv, rv) in enumerate(zip(categories, user_vals, pop_vals, ref_vals)):
         color = C_GREEN if uv >= rv else (C_YELLOW if uv >= rv * 0.6 else C_RED)
         fig.add_trace(go.Bar(
-            name=cat, x=[uv], y=[cat], orientation="h", marker_color=color, showlegend=False,
+            name=cat, x=[uv], y=[i], orientation="h", marker_color=color, showlegend=False,
             hovertemplate=f"<b>{cat}</b><br>Your Value: {uv}<extra></extra>",
             text=f"{uv}", textposition="outside", textfont=dict(size=11, color=color),
         ))
+
+        # Reference lines are regular traces so they support hover values.
         fig.add_trace(go.Scatter(
-            x=[pv, pv], y=[i-0.4, i+0.4], mode="lines",
-            line=dict(color="rgba(255,255,255,0.5)", width=2, dash="dot"),
-            hovertemplate=f"Population Average: {pv:.1f}<extra></extra>", showlegend=False, name="Pop. Avg"
+            x=[pv, pv],
+            y=[i - 0.32, i + 0.32],
+            mode="lines",
+            line=dict(color="rgba(255,255,255,0.55)", width=2, dash="dot"),
+            hovertemplate=f"<b>{cat}</b><br>Population Average: {pv:.1f}<extra></extra>",
+            showlegend=False,
         ))
         fig.add_trace(go.Scatter(
-            x=[rv, rv], y=[i-0.4, i+0.4], mode="lines",
-            line=dict(color="rgba(255,255,255,0.85)", width=2),
-            hovertemplate=f"Recommended Value: {rv:.1f}<extra></extra>", showlegend=False, name="Target"
+            x=[rv, rv],
+            y=[i - 0.32, i + 0.32],
+            mode="lines",
+            line=dict(color="rgba(255,255,255,0.9)", width=2),
+            hovertemplate=f"<b>{cat}</b><br>Recommended Value: {rv:.1f}<extra></extra>",
+            showlegend=False,
         ))
+
+    x_max = max(max(user_vals), max(pop_vals), max(ref_vals)) * 1.25
 
     fig.update_layout(
         title="Your Level vs Recommended (solid line) and Population Average (dotted)",
-        barmode="overlay", height=200, xaxis=dict(showgrid=False, showticklabels=False),
+        barmode="overlay",
+        height=220,
+        xaxis=dict(showgrid=False, showticklabels=False, range=[0, x_max]),
+        yaxis=dict(
+            tickmode="array",
+            tickvals=y_positions,
+            ticktext=categories,
+            range=[-0.6, len(categories) - 0.4],
+            showgrid=False,
+            zeroline=False,
+        ),
         margin=dict(l=140, r=60, t=50, b=10), **PLOTLY_LAYOUT, hovermode="closest"
     )
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
@@ -351,12 +417,12 @@ def show(back_fn):
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown('<div class="sec-title">Your Values</div>', unsafe_allow_html=True)
     m1,m2,m3,m4,m5,m6 = st.columns(6)
-    with m1: pill("HbA1c", f"{hba1c:.1f}%", "< 5.7% normal")
-    with m2: pill("Fasting Sugar", f"{glucose}", "70-100 mg/dL")
-    with m3: pill("BMI", f"{bmi:.1f}", "18.5-24.9 ideal")
-    with m4: pill("Systolic BP", f"{sbp}", "< 120 mmHg")
-    with m5: pill("Cholesterol", f"{chol}", "< 200 mg/dL")
-    with m6: pill("Age", f"{age}", f"Group: {grp}")
+    with m1: pill("HbA1c", f"{hba1c:.1f}%", "< 5.7% normal", tone=zone_color(zone_hba1c(hba1c)))
+    with m2: pill("Fasting Sugar", f"{glucose}", "70-100 mg/dL", tone=zone_color(zone_glucose(glucose)))
+    with m3: pill("BMI", f"{bmi:.1f}", "18.5-24.9 ideal", tone=zone_color(zone_bmi(bmi)))
+    with m4: pill("Systolic BP", f"{sbp}", "< 120 mmHg", tone=zone_color(zone_sbp(sbp)))
+    with m5: pill("Cholesterol", f"{chol}", "< 200 mg/dL", tone=zone_color(zone_chol(chol)))
+    with m6: pill("Age", f"{age}", f"Group: {grp}", tone=C_WARM)
 
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown('<div class="sec-title">Activity & Sedentary Behaviour</div>', unsafe_allow_html=True)

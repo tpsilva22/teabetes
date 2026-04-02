@@ -46,10 +46,22 @@ def inject_styles():
     """, unsafe_allow_html=True)
 
 def kpi(label, value, sub="", alert=False):
-    cls = "kpi-value kpi-alert" if alert else "kpi-value"
+    color = C_AMBER if alert else "#7cb9e8"
     st.markdown(f"""<div class="kpi">
         <div class="kpi-label">{label}</div>
-        <div class="{cls}">{value}</div>
+        <div class="kpi-value" style="color:{color}">{value}</div>
+        <div class="kpi-sub">{sub}</div>
+    </div>""", unsafe_allow_html=True)
+
+def kpi_zone(label, value, sub, zone):
+    zone_colors = {
+        "good": C_SAGE,
+        "mid": C_AMBER,
+        "bad": "#e74c3c",
+    }
+    st.markdown(f"""<div class="kpi">
+        <div class="kpi-label">{label}</div>
+        <div class="kpi-value" style="color:{zone_colors.get(zone, C_AMBER)}">{value}</div>
         <div class="kpi-sub">{sub}</div>
     </div>""", unsafe_allow_html=True)
 
@@ -108,16 +120,18 @@ def chart_comorbidities_heatmap(df):
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
 def chart_family_history_boxplot(df):
+    s = df.copy()
+    s["family_history_label"] = s["family_history_diabetes"].map({0: "No Family History", 1: "With Family History"})
     fig = px.box(
-        df, x="family_history_diabetes", y="diabetes_risk_score", color="family_history_diabetes",
+        s, x="family_history_label", y="diabetes_risk_score", color="family_history_label",
         color_discrete_sequence=[C_TEAL, C_ROSE],
-        labels={"family_history_diabetes": "Family History", "diabetes_risk_score": "Risk Score (0-100 Points)"},
-        category_orders={"family_history_diabetes": [0, 1]}, title="Impact of Family History on Risk Score"
+        labels={"family_history_label": "Family History", "diabetes_risk_score": "Clinical Risk Score"},
+        category_orders={"family_history_label": ["No Family History", "With Family History"]}, title="Impact of Family History on Risk Score"
     )
-    fig.update_xaxes(ticktext=["No History", "With History"], tickvals=[0, 1], title="")
+    fig.update_yaxes(title="Risk Score (0-100 Points)")
+    fig.update_xaxes(title="")
     fig.update_layout(
-        height=300, showlegend=True, 
-        legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, title_text="History"),
+        height=300, showlegend=False,
         margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT
     )
     axis_style(fig)
@@ -132,8 +146,7 @@ def chart_risk_by_diagnosis(df):
     )
     fig.update_xaxes(ticktext=["Undiagnosed", "Diagnosed"], tickvals=[0, 1], title="")
     fig.update_layout(
-        height=300, showlegend=True,
-        legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, title_text="Diagnosis"),
+        height=300, showlegend=False,
         margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT
     )
     axis_style(fig)
@@ -229,11 +242,16 @@ def show(logout_fn):
     avg_pp    = df["pulse_pressure"].mean() if not df.empty else 0
     pct_diag  = df["diagnosed_diabetes"].mean() * 100
 
+    ir_zone = "good" if pct_ir <= 25 else ("mid" if pct_ir <= 40 else "bad")
+    hba1c_zone = "good" if avg_hba1c < 5.7 else ("mid" if avg_hba1c < 6.5 else "bad")
+    pp_zone = "good" if avg_pp < 40 else ("mid" if avg_pp <= 50 else "bad")
+    diag_zone = "good" if pct_diag < 10 else ("mid" if pct_diag <= 20 else "bad")
+
     c1, c2, c3, c4 = st.columns(4)
-    with c1: kpi("Insulin Resistance", fmt_pct(pct_ir), "patients with HOMA-IR > 2.5", alert=pct_ir > 40)
-    with c2: kpi("Average HbA1c", fmt_num(avg_hba1c) + "%", "healthy reference < 5.7%", alert=avg_hba1c > 6.5)
-    with c3: kpi("Cardiovascular Alert", fmt_num(avg_pp) + " mmHg", "mean pulse pressure in selection", alert=avg_pp > 50)
-    with c4: kpi("Diagnosed", fmt_pct(pct_diag), "with diagnosed diabetes")
+    with c1: kpi_zone("Insulin Resistance", fmt_pct(pct_ir), "patients with HOMA-IR > 2.5", ir_zone)
+    with c2: kpi_zone("Average HbA1c", fmt_num(avg_hba1c) + "%", "healthy reference < 5.7%", hba1c_zone)
+    with c3: kpi_zone("Cardiovascular Alert", fmt_num(avg_pp) + " mmHg", "mean pulse pressure in selection", pp_zone)
+    with c4: kpi_zone("Diagnosed", fmt_pct(pct_diag), "with diagnosed diabetes", diag_zone)
 
     st.markdown('<div class="sec-title">Metabolic Risk</div>', unsafe_allow_html=True)
     chart_metabolic_scatter(df)
