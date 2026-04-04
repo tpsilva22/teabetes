@@ -296,6 +296,25 @@ def show(logout_fn):
     chart_variable_explorer(df, x_var, y_var, color_var, sample_n, chart_type)
 
     with st.expander("Explore Raw Data"):
-        cols_show = st.multiselect("Columns", list(df.columns), default=list(df.columns))
-        st.dataframe(df[cols_show].head(1000), width="stretch", height=280)
-        st.caption(f"{len(df):,} filtered records — showing up to 1000.")
+        raw_df = df_full
+        cols_show = st.multiselect("Columns", list(raw_df.columns), default=list(raw_df.columns))
+
+        max_rows = min(100000, len(raw_df))
+        default_rows = min(1000, max_rows)
+        rows_to_show = st.slider(
+            "Rows to display",
+            min_value=1,
+            max_value=max_rows,
+            value=default_rows,
+            step=1,
+        )
+        start_max = max(0, len(raw_df) - rows_to_show)
+        start_row = st.slider("Start row", min_value=0, max_value=start_max, value=0, step=1)
+
+        visible_df = raw_df.iloc[start_row : start_row + rows_to_show]
+        st.dataframe(visible_df[cols_show], width="stretch", height=520)
+
+        end_row = start_row + len(visible_df)
+        st.caption(
+            f"Showing rows {start_row + 1:,} to {end_row:,} of {len(raw_df):,} records from full dataset."
+        )
