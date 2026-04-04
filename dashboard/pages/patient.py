@@ -253,7 +253,7 @@ def chart_activity_risk(df, user_activity, user_risk):
     fig = go.Figure()
     fig.add_trace(go.Bar(
         x=agg["bracket"], y=agg["median_risk"], marker_color=bar_colors, opacity=0.82,
-        hovertemplate="<b>%{x} min/week</b><br>Median Risk Score: %{y:.1f}<extra></extra>", name="Population Median",
+        hovertemplate="<b>%{x} min/week</b><br>Median Diabetes Risk: %{y:.1f}<extra></extra>", name="Population Median",
     ))
     fig.add_hline(
         y=user_risk,
@@ -265,9 +265,9 @@ def chart_activity_risk(df, user_activity, user_risk):
         annotation_font_color=C_WARM,
     )
     fig.update_layout(
-        title="Diabetes Risk Score vs Physical Activity",
+        title="Diabetes Risk vs Physical Activity",
         xaxis_title="Physical Activity (min/week)",
-        yaxis_title="Median Diabetes Risk Score",
+        yaxis_title="Median Diabetes Risk",
         height=300,
         margin=dict(l=50, r=10, t=50, b=50),
         **PLOTLY_LAYOUT,
@@ -284,7 +284,7 @@ def chart_risk_vs_age_group(df, user_age, user_risk):
         hovertemplate="<b>%{x}</b><br>Median Risk: %{y:.1f}<extra></extra>",
     ))
     fig.add_hline(y=user_risk, line_dash="dot", line_color=C_WARM, line_width=2, annotation_text=f"Your Risk: {user_risk:.0f}", annotation_font_size=10, annotation_font_color=C_WARM, annotation_position="bottom right")
-    fig.update_layout(title=f"Your Risk vs Age Group (Your Group: {grp})", yaxis_title="Median Risk Score", height=280, margin=dict(l=50, r=10, t=60, b=50), **PLOTLY_LAYOUT)
+    fig.update_layout(title=f"Your Risk vs Age Group (Your Group: {grp})", yaxis_title="Median Diabetes Risk", height=280, margin=dict(l=50, r=10, t=60, b=50), **PLOTLY_LAYOUT)
     axis_style(fig)
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
@@ -339,8 +339,8 @@ def chart_bmi_risk(df, user_bmi, user_risk):
         color="bmi_group",
         color_discrete_map=color_map,
         points="outliers",
-        labels={"bmi_group": "BMI Group", "diabetes_risk_score": "Diabetes Risk Score"},
-        title="Diabetes Risk Score vs BMI",
+        labels={"bmi_group": "BMI Group", "diabetes_risk_score": "Diabetes Risk"},
+        title="Diabetes Risk vs BMI",
     )
     fig.update_traces(boxmean=True, jitter=0.2, whiskerwidth=0.6, marker_size=4, showlegend=False)
 
@@ -366,9 +366,9 @@ def chart_bmi_risk(df, user_bmi, user_risk):
         annotation_font_color=C_WARM,
     )
     fig.update_layout(
-        title="Diabetes Risk Score vs BMI",
+        title="Diabetes Risk vs BMI",
         xaxis_title="BMI Group",
-        yaxis_title="Diabetes Risk Score",
+        yaxis_title="Diabetes Risk",
         height=360,
         margin=dict(l=30, r=20, t=50, b=30),
         **PLOTLY_LAYOUT,
@@ -380,7 +380,7 @@ def chart_sleep_risk(sleep, risk, df):
     agg = df.groupby("sleep_hours_per_day")["diabetes_risk_score"].mean().reset_index()
     fig = px.line(
         agg, x="sleep_hours_per_day", y="diabetes_risk_score",
-        labels={"sleep_hours_per_day": "Sleep Hours", "diabetes_risk_score": "Average Risk Score"},
+        labels={"sleep_hours_per_day": "Sleep Hours", "diabetes_risk_score": "Average Diabetes Risk"},
         title="Impact of Sleep on Average Risk"
     )
     fig.update_traces(line_color=C_BLUE, line_width=3)

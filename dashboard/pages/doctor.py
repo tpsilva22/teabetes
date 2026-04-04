@@ -139,10 +139,10 @@ def chart_family_history_boxplot(df):
     fig = px.box(
         s, x="family_history_label", y="diabetes_risk_score", color="family_history_label",
         color_discrete_sequence=[C_TEAL, C_ROSE],
-        labels={"family_history_label": "Family History", "diabetes_risk_score": "Clinical Risk Score"},
-        category_orders={"family_history_label": ["No Family History", "With Family History"]}, title="Impact of Family History on Risk Score"
+        labels={"family_history_label": "Family History", "diabetes_risk_score": "Diabetes Risk"},
+        category_orders={"family_history_label": ["No Family History", "With Family History"]}, title="Impact of Family History on Diabetes Risk"
     )
-    fig.update_yaxes(title="Risk Score (0-100 Points)")
+    fig.update_yaxes(title="Diabetes Risk (0-100 Points)")
     fig.update_xaxes(title="")
     fig.update_layout(
         height=300, showlegend=False,
@@ -155,8 +155,8 @@ def chart_risk_by_diagnosis(df):
     fig = px.violin(
         df, x="diagnosed_diabetes", y="diabetes_risk_score", color="diagnosed_diabetes",
         color_discrete_sequence=[C_SAGE, C_ROSE], box=True, points=False,
-        labels={"diagnosed_diabetes": "Diagnosis Status", "diabetes_risk_score": "Risk Score (0-100 Points)"},
-        title="Risk Score: Diagnosed vs Undiagnosed"
+        labels={"diagnosed_diabetes": "Diagnosis Status", "diabetes_risk_score": "Diabetes Risk (0-100 Points)"},
+        title="Diabetes Risk: Diagnosed vs Undiagnosed"
     )
     fig.update_xaxes(ticktext=["Undiagnosed", "Diagnosed"], tickvals=[0, 1], title="")
     fig.update_layout(
@@ -365,10 +365,13 @@ def show(logout_fn):
     with r1a:
         if len(df["diabetes_stage"].unique()) > 1:
             chart_stage_pie(df)
+            clinical_note("The distribution of stages helps identify where most of the selected population sits in the disease spectrum. A larger pre-diabetes segment may indicate an opportunity for early intervention.")
         else:
             chart_age_histogram(df)
+            clinical_note("Within a single selected stage, age concentration can reveal the most affected life period and help prioritize screening strategies for that age range.")
     with r1b:
         chart_family_history_boxplot(df)
+        clinical_note("Patients with family history typically show higher diabetes risk spread, reinforcing genetic predisposition as an important risk stratification factor.")
 
     st.markdown('<div class="sec-title">Comorbidities & Diagnosis</div>', unsafe_allow_html=True)
     r2a, r2b = st.columns([3, 2])
@@ -377,15 +380,18 @@ def show(logout_fn):
         clinical_note("Arterial stiffness increases with age — elevated pulse pressure in older adults is an independent indicator of metabolic and cardiovascular risk.")
     with r2b:
         chart_risk_by_diagnosis(df)
+        clinical_note("If undiagnosed patients present elevated risk distributions, this suggests potential underdiagnosis and the need for more proactive screening pathways.")
 
     st.markdown('<div class="sec-title">Detailed Clinical Analysis</div>', unsafe_allow_html=True)
     chart_hba1c_by_stage(df)
+    clinical_note("Average HbA1c tends to rise with disease progression. Values close to or above the 6.5% threshold indicate clinically relevant glycaemic deterioration.")
     
     st.markdown("#### Correlation Heatmap")
     all_num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     default_corr_cols = ["insulin_resistance", "hba1c", "glucose_fasting", "glucose_postprandial", "bmi", "obesity_index", "pulse_pressure", "map", "cholesterol_total", "ratio_ldl_hdl", "diabetes_risk_score"]
     selected_corr_cols = st.multiselect("Select Variables for Correlation Matrix", all_num_cols, default=default_corr_cols)
     chart_corr_heatmap(df, selected_corr_cols)
+    clinical_note("Strong positive correlations suggest variables moving together and may indicate shared metabolic pathways; weak correlations can help avoid redundant markers.")
 
     st.markdown('<div class="sec-title">Variable Explorer</div>', unsafe_allow_html=True)
     preferred_cat_cols = ["diabetes_stage", "diagnosed_diabetes", "age_groups", "weight_status", "gender"]
@@ -459,6 +465,7 @@ def show(logout_fn):
         st.caption("Tip: choose chart type first to see axis options adapt")
 
     chart_variable_explorer(df, x_var, y_var, group_by, sample_n, chart_type)
+    clinical_note("Use this explorer to test specific hypotheses. Consistent trends across groups support robust associations, while overlapping patterns suggest weaker discriminative value.")
 
     with st.expander("Explore Raw Data"):
         raw_df = df_full
