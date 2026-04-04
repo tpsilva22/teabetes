@@ -16,6 +16,11 @@ C_AMBER   = "#b8860b"
 C_ROSE    = "#a0536e"
 C_MUTED   = "rgba(255,255,255,0.45)"
 
+BINARY_VALUE_LABELS = {
+    "diagnosed_diabetes": {0: "Not Diagnosed", 1: "Diagnosed"},
+    "family_history_diabetes": {0: "No Family History", 1: "With Family History"},
+}
+
 PLOTLY_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
@@ -73,6 +78,15 @@ def axis_style(fig, gridcolor="rgba(255,255,255,0.07)"):
     fig.update_yaxes(gridcolor=gridcolor, linecolor="rgba(255,255,255,0.1)", linewidth=1)
     return fig
 
+def is_binary_numeric(df, column_name):
+    if column_name not in df.columns:
+        return False
+    values = set(df[column_name].dropna().unique())
+    return values.issubset({0, 1})
+
+def binary_value_labels(column_name):
+    return BINARY_VALUE_LABELS.get(column_name, {0: "No", 1: "Yes"})
+
 def chart_stage_pie(df):
     counts = df["diabetes_stage"].value_counts().reindex([s for s in STAGE_ORDER if s in df["diabetes_stage"].unique()]).dropna()
     fig = go.Figure(go.Pie(
@@ -88,10 +102,10 @@ def chart_age_histogram(df):
     fig = px.histogram(
         df, x="age", nbins=20,
         color_discrete_sequence=[C_BLUE],
-        labels={"age": "Age", "count": "Number of Patients"},
-        title="Age Distribution for Selected Stage"
+        labels={"age": "Age", "count": "Frequency"},
+        title="Age Distribution for Selected Diabetes Stage"
     )
-    fig.update_layout(height=300, margin=dict(l=10, r=10, t=40, b=10), **PLOTLY_LAYOUT)
+    fig.update_layout(height=300, margin=dict(l=10, r=10, t=40, b=10), yaxis_title="Frequency", **PLOTLY_LAYOUT)
     axis_style(fig)
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
@@ -125,10 +139,10 @@ def chart_family_history_boxplot(df):
     fig = px.box(
         s, x="family_history_label", y="diabetes_risk_score", color="family_history_label",
         color_discrete_sequence=[C_TEAL, C_ROSE],
-        labels={"family_history_label": "Family History", "diabetes_risk_score": "Clinical Risk Score"},
-        category_orders={"family_history_label": ["No Family History", "With Family History"]}, title="Impact of Family History on Risk Score"
+        labels={"family_history_label": "Family History", "diabetes_risk_score": "Diabetes Risk"},
+        category_orders={"family_history_label": ["No Family History", "With Family History"]}, title="Impact of Family History on Diabetes Risk"
     )
-    fig.update_yaxes(title="Risk Score (0-100 Points)")
+    fig.update_yaxes(title="Diabetes Risk (0-100 Points)")
     fig.update_xaxes(title="")
     fig.update_layout(
         height=300, showlegend=False,
@@ -141,8 +155,8 @@ def chart_risk_by_diagnosis(df):
     fig = px.violin(
         df, x="diagnosed_diabetes", y="diabetes_risk_score", color="diagnosed_diabetes",
         color_discrete_sequence=[C_SAGE, C_ROSE], box=True, points=False,
-        labels={"diagnosed_diabetes": "Diagnosis Status", "diabetes_risk_score": "Risk Score (0-100 Points)"},
-        title="Risk Score: Diagnosed vs Undiagnosed"
+        labels={"diagnosed_diabetes": "Diagnosis Status", "diabetes_risk_score": "Diabetes Risk (0-100 Points)"},
+        title="Diabetes Risk: Diagnosed vs Undiagnosed"
     )
     fig.update_xaxes(ticktext=["Undiagnosed", "Diagnosed"], tickvals=[0, 1], title="")
     fig.update_layout(
@@ -180,19 +194,108 @@ def chart_corr_heatmap(df, cols):
     fig.update_yaxes(tickfont=dict(size=9))
     st.plotly_chart(fig, width="stretch")
 
-def chart_variable_explorer(df, x_var, y_var, color_var, sample_n, chart_type):
-    s = df.sample(min(sample_n, len(df)), random_state=42)
+def chart_variable_explorer(df, x_var, y_var, group_by, sample_n, chart_type):
+    use_sample = chart_type in ["Scatter", "Line", "Density Heatmap"]
+    s = df.sample(min(sample_n, len(df)), random_state=42) if use_sample else df
+
+    color_var = None if group_by == "None" else group_by
+    x_plot_var = x_var
+    y_plot_var = y_var
+    y_binary_labels = None
+
+    if chart_type in ["Box", "Violin", "Bar"] and is_binary_numeric(s, x_var):
+        s = s.copy()
+        x_plot_var = f"{x_var}_label"
+        s[x_plot_var] = s[x_var].map(binary_value_labels(x_var)).fillna("Unknown")
+
+    if y_var and is_binary_numeric(s, y_var):
+        y_binary_labels = binary_value_labels(y_var)
+
+    if color_var == "diagnosed_diabetes":
+        s = s.copy()
+        s["diagnosis_group"] = s["diagnosed_diabetes"].map(binary_value_labels("diagnosed_diabetes")).fillna("Unknown")
+        color_var = "diagnosis_group"
     color_map = STAGE_COLORS if color_var == "diabetes_stage" else None
-    labels_map = {"diabetes_stage": "Stage", "diagnosed_diabetes": "Diagnosed", "age_groups": "Age Group", "weight_status": "Weight Status"}
+    labels_map = {
+        "diabetes_stage": "Stage",
+        "diagnosed_diabetes": "Diagnosis",
+        "diagnosis_group": "Diagnosis",
+        "age_groups": "Age Group",
+        "weight_status": "Weight Status",
+    }
+    if x_plot_var != x_var:
+        labels_map[x_plot_var] = labels_map.get(x_var, x_var.replace("_", " ").title())
+    base_kwargs = {"labels": labels_map}
+    if color_var:
+        base_kwargs["color"] = color_var
+    if color_map:
+        base_kwargs["color_discrete_map"] = color_map
+
     if chart_type == "Scatter":
-        fig = px.scatter(s, x=x_var, y=y_var, color=color_var, color_discrete_map=color_map, opacity=0.55, trendline="lowess", trendline_scope="overall", trendline_color_override="rgba(255,255,255,0.6)", labels=labels_map, title=f"{x_var} vs {y_var}")
+        fig = px.scatter(
+            s,
+            x=x_plot_var,
+            y=y_plot_var,
+            opacity=0.55,
+            trendline="lowess",
+            trendline_scope="overall",
+            trendline_color_override="rgba(255,255,255,0.6)",
+            title=f"{x_var} vs {y_var}",
+            **base_kwargs,
+        )
+    elif chart_type == "Line":
+        line_df = s.sort_values(x_plot_var)
+        fig = px.line(line_df, x=x_plot_var, y=y_plot_var, title=f"{y_var} by {x_var}", **base_kwargs)
+    elif chart_type == "Histogram":
+        fig = px.histogram(
+            s,
+            x=x_plot_var,
+            title=f"Distribution of {x_var}",
+            barmode="overlay",
+            opacity=0.8,
+            **base_kwargs,
+        )
+    elif chart_type == "Density Heatmap":
+        fig = px.density_heatmap(
+            s,
+            x=x_var,
+            y=y_var,
+            nbinsx=30,
+            nbinsy=30,
+            color_continuous_scale="Blues",
+            title=f"Density: {x_var} vs {y_var}",
+            labels=labels_map,
+        )
     elif chart_type == "Box":
-        fig = px.box(s, x=x_var, y=y_var, color=color_var, color_discrete_map=color_map, labels=labels_map, title=f"{y_var} Distribution by {x_var}")
+        fig = px.box(s, x=x_plot_var, y=y_plot_var, title=f"{y_var} Distribution by {x_var}", **base_kwargs)
     elif chart_type == "Violin":
-        fig = px.violin(s, x=x_var, y=y_var, color=color_var, color_discrete_map=color_map, box=True, labels=labels_map, title=f"{y_var} Density by {x_var}")
+        fig = px.violin(s, x=x_plot_var, y=y_plot_var, box=True, title=f"{y_var} Density by {x_var}", **base_kwargs)
     elif chart_type == "Bar":
-        fig = px.bar(s, x=x_var, y=y_var, color=color_var, color_discrete_map=color_map, labels=labels_map, title=f"{y_var} by {x_var}")
-    fig.update_layout(height=400, legend_title_text="", margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT)
+        agg_cols = [x_plot_var] + ([color_var] if color_var else [])
+        bar_df = s.groupby(agg_cols, observed=True)[y_plot_var].mean().reset_index()
+        fig = px.bar(
+            bar_df,
+            x=x_plot_var,
+            y=y_plot_var,
+            title=f"Average {y_var} by {x_var}",
+            **base_kwargs,
+        )
+
+    if y_binary_labels and chart_type in ["Box", "Violin"]:
+        fig.update_yaxes(
+            tickmode="array",
+            tickvals=[0, 1],
+            ticktext=[y_binary_labels[0], y_binary_labels[1]],
+        )
+    if x_plot_var != x_var and chart_type in ["Box", "Violin", "Bar", "Histogram"]:
+        x_labels = binary_value_labels(x_var)
+        fig.update_xaxes(
+            tickmode="array",
+            tickvals=[x_labels[0], x_labels[1]],
+            ticktext=[x_labels[0], x_labels[1]],
+        )
+
+    fig.update_layout(height=500, legend_title_text="", margin=dict(l=50, r=10, t=44, b=40), **PLOTLY_LAYOUT)
     axis_style(fig)
     st.plotly_chart(fig, width="stretch")
 
@@ -262,10 +365,13 @@ def show(logout_fn):
     with r1a:
         if len(df["diabetes_stage"].unique()) > 1:
             chart_stage_pie(df)
+            clinical_note("The distribution of stages helps identify where most of the selected population sits in the disease spectrum. A larger pre-diabetes segment may indicate an opportunity for early intervention.")
         else:
             chart_age_histogram(df)
+            clinical_note("Within a single selected stage, age concentration can reveal the most affected life period and help prioritize screening strategies for that age range.")
     with r1b:
         chart_family_history_boxplot(df)
+        clinical_note("Patients with family history typically show higher diabetes risk spread, reinforcing genetic predisposition as an important risk stratification factor.")
 
     st.markdown('<div class="sec-title">Comorbidities & Diagnosis</div>', unsafe_allow_html=True)
     r2a, r2b = st.columns([3, 2])
@@ -274,28 +380,113 @@ def show(logout_fn):
         clinical_note("Arterial stiffness increases with age — elevated pulse pressure in older adults is an independent indicator of metabolic and cardiovascular risk.")
     with r2b:
         chart_risk_by_diagnosis(df)
+        clinical_note("If undiagnosed patients present elevated risk distributions, this suggests potential underdiagnosis and the need for more proactive screening pathways.")
 
     st.markdown('<div class="sec-title">Detailed Clinical Analysis</div>', unsafe_allow_html=True)
     chart_hba1c_by_stage(df)
+    clinical_note("Average HbA1c tends to rise with disease progression. Values close to or above the 6.5% threshold indicate clinically relevant glycaemic deterioration.")
     
     st.markdown("#### Correlation Heatmap")
     all_num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     default_corr_cols = ["insulin_resistance", "hba1c", "glucose_fasting", "glucose_postprandial", "bmi", "obesity_index", "pulse_pressure", "map", "cholesterol_total", "ratio_ldl_hdl", "diabetes_risk_score"]
     selected_corr_cols = st.multiselect("Select Variables for Correlation Matrix", all_num_cols, default=default_corr_cols)
     chart_corr_heatmap(df, selected_corr_cols)
+    clinical_note("Strong positive correlations suggest variables moving together and may indicate shared metabolic pathways; weak correlations can help avoid redundant markers.")
 
     st.markdown('<div class="sec-title">Variable Explorer</div>', unsafe_allow_html=True)
-    cat_cols = ["diabetes_stage", "diagnosed_diabetes", "age_groups", "weight_status", "gender"]
+    preferred_cat_cols = ["diabetes_stage", "diagnosed_diabetes", "age_groups", "weight_status", "gender"]
+    detected_cat_cols = df.select_dtypes(include=["object", "category", "bool"]).columns.tolist()
+    cat_cols = [c for c in preferred_cat_cols if c in df.columns]
+    cat_cols += [c for c in detected_cat_cols if c not in cat_cols]
+    binary_num_cols = [
+        col for col in all_num_cols
+        if set(df[col].dropna().unique()).issubset({0, 1})
+    ]
+
+    numeric_no_binary = [col for col in all_num_cols if col not in binary_num_cols]
+
+    chart_type = st.selectbox("Chart Type", ["Scatter", "Line", "Histogram", "Density Heatmap", "Box", "Violin", "Bar"])
+
+    def pick_default(options, preferred):
+        if not options:
+            return 0
+        return options.index(preferred) if preferred in options else 0
+
+    if chart_type in ["Scatter", "Line", "Density Heatmap"]:
+        x_options = numeric_no_binary
+        y_options = numeric_no_binary
+        group_options = ["None"]
+        use_sample = True
+    elif chart_type == "Histogram":
+        x_options = numeric_no_binary + [c for c in cat_cols if c not in numeric_no_binary]
+        y_options = []
+        group_options = ["None"] + cat_cols if cat_cols else ["None"]
+        use_sample = False
+    else:
+        x_options = cat_cols + binary_num_cols if cat_cols else binary_num_cols
+        y_options = numeric_no_binary + binary_num_cols
+        group_options = ["None"] + cat_cols + binary_num_cols if cat_cols or binary_num_cols else ["None"]
+        use_sample = False
+
     ec1, ec2, ec3, ec4, ec5 = st.columns([2, 2, 2, 2, 2])
-    with ec1: x_var = st.selectbox("X-Axis", all_num_cols, index=all_num_cols.index("insulin_resistance") if "insulin_resistance" in all_num_cols else 0)
-    with ec2: y_var = st.selectbox("Y-Axis", all_num_cols, index=all_num_cols.index("hba1c") if "hba1c" in all_num_cols else 0)
-    with ec3: color_var = st.selectbox("Colour", cat_cols, index=cat_cols.index("diabetes_stage"))
-    with ec4: chart_type = st.selectbox("Chart Type", ["Scatter", "Box", "Violin", "Bar"])
-    with ec5: sample_n = st.slider("Patient Sample Size", 500, min(8000, len(df)), 2000, step=500, help="Limiting sample size improves rendering performance and prevents visual clutter.")
-    
-    chart_variable_explorer(df, x_var, y_var, color_var, sample_n, chart_type)
+    with ec1:
+        x_var = st.selectbox("X-Axis", x_options, index=pick_default(x_options, "insulin_resistance"))
+    with ec2:
+        if y_options:
+            y_available = [col for col in y_options if col != x_var]
+            if y_available:
+                y_var = st.selectbox("Y-Axis", y_available, index=pick_default(y_available, "hba1c"))
+            else:
+                st.selectbox("Y-Axis", ["No valid variable available"], disabled=True)
+                y_var = None
+        else:
+            st.selectbox("Y-Axis", ["Not used for this chart"], disabled=True)
+            y_var = None
+
+    group_available = [g for g in group_options if g == "None" or (g != x_var and g != y_var)]
+    if not group_available:
+        group_available = ["None"]
+    with ec3:
+        group_by = st.selectbox("Group by", group_available, index=pick_default(group_available, "diabetes_stage"))
+    with ec4:
+        if use_sample:
+            sample_n = st.slider(
+                "Patient Sample Size",
+                min_value=500,
+                max_value=min(8000, len(df)),
+                value=min(2000, len(df)),
+                step=500,
+                help="Limiting sample size improves rendering performance and prevents visual clutter.",
+            )
+        else:
+            sample_n = len(df)
+            st.caption("Sample Size not required for this chart type")
+    with ec5:
+        st.caption("Tip: choose chart type first to see axis options adapt")
+
+    chart_variable_explorer(df, x_var, y_var, group_by, sample_n, chart_type)
+    clinical_note("Use this explorer to test specific hypotheses. Consistent trends across groups support robust associations, while overlapping patterns suggest weaker discriminative value.")
 
     with st.expander("Explore Raw Data"):
-        cols_show = st.multiselect("Columns", list(df.columns), default=list(df.columns))
-        st.dataframe(df[cols_show].head(1000), width="stretch", height=280)
-        st.caption(f"{len(df):,} filtered records — showing up to 1000.")
+        raw_df = df_full
+        cols_show = st.multiselect("Columns", list(raw_df.columns), default=list(raw_df.columns))
+
+        max_rows = min(100000, len(raw_df))
+        default_rows = min(1000, max_rows)
+        rows_to_show = st.slider(
+            "Rows to display",
+            min_value=1,
+            max_value=max_rows,
+            value=default_rows,
+            step=1,
+        )
+        start_max = max(0, len(raw_df) - rows_to_show)
+        start_row = st.slider("Start row", min_value=0, max_value=start_max, value=0, step=1)
+
+        visible_df = raw_df.iloc[start_row : start_row + rows_to_show]
+        st.dataframe(visible_df[cols_show], width="stretch", height=520)
+
+        end_row = start_row + len(visible_df)
+        st.caption(
+            f"Showing rows {start_row + 1:,} to {end_row:,} of {len(raw_df):,} records from full dataset."
+        )
