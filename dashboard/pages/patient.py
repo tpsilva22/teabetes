@@ -234,21 +234,44 @@ def chart_activity_diet_bar(activity, diet, df):
     )
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
-def chart_activity_glucose(df, user_activity, user_glucose):
+def chart_activity_risk(df, user_activity, user_risk):
     bins = [0, 60, 120, 180, 240, 600]
     labels = ["0-60", "60-120", "120-180", "180-240", "240+"]
     tmp = df.copy()
     tmp["act_bin"] = pd.cut(tmp["physical_activity_minutes_per_week"], bins=bins, labels=labels)
-    agg = tmp.groupby("act_bin", observed=True)["glucose_fasting"].median().reset_index()
-    agg.columns = ["bracket", "median_glucose"]
+    agg = tmp.groupby("act_bin", observed=True)["diabetes_risk_score"].median().reset_index()
+    agg.columns = ["bracket", "median_risk"]
+
+    user_bin = pd.cut(
+        pd.Series([user_activity]),
+        bins=bins,
+        labels=labels,
+        include_lowest=True,
+    ).iloc[0]
+    bar_colors = [C_ORANGE if b == user_bin else C_BLUE for b in agg["bracket"]]
 
     fig = go.Figure()
     fig.add_trace(go.Bar(
-        x=agg["bracket"], y=agg["median_glucose"], marker_color=C_BLUE, opacity=0.7,
-        hovertemplate="<b>%{x} min/week</b><br>Median Glucose: %{y:.1f} mg/dL<extra></extra>", name="Population Median",
+        x=agg["bracket"], y=agg["median_risk"], marker_color=bar_colors, opacity=0.82,
+        hovertemplate="<b>%{x} min/week</b><br>Median Risk Score: %{y:.1f}<extra></extra>", name="Population Median",
     ))
-    fig.add_hline(y=user_glucose, line_dash="dot", line_color=C_WARM, line_width=2, annotation_text=f"Your Glucose: {user_glucose} mg/dL", annotation_font_size=10, annotation_font_color=C_WARM)
-    fig.update_layout(title="Activity vs Fasting Blood Sugar", xaxis_title="Physical Activity (min/week)", yaxis_title="Median Fasting Glucose (mg/dL)", height=300, margin=dict(l=50, r=10, t=50, b=50), **PLOTLY_LAYOUT)
+    fig.add_hline(
+        y=user_risk,
+        line_dash="dot",
+        line_color=C_WARM,
+        line_width=2,
+        annotation_text=f"Your Risk: {user_risk:.1f}",
+        annotation_font_size=10,
+        annotation_font_color=C_WARM,
+    )
+    fig.update_layout(
+        title="Diabetes Risk Score vs Physical Activity",
+        xaxis_title="Physical Activity (min/week)",
+        yaxis_title="Median Diabetes Risk Score",
+        height=300,
+        margin=dict(l=50, r=10, t=50, b=50),
+        **PLOTLY_LAYOUT,
+    )
     axis_style(fig)
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
@@ -427,7 +450,7 @@ def show(back_fn):
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown('<div class="sec-title">Activity & Sedentary Behaviour</div>', unsafe_allow_html=True)
     ra1, ra2 = st.columns([3, 2])
-    with ra1: chart_activity_glucose(df, activity, glucose)
+    with ra1: chart_activity_risk(df, activity, risk)
     with ra2: chart_sedentary_gauge(screen_h, activity)
 
     st.markdown("<br><br>", unsafe_allow_html=True)
