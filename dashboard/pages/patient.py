@@ -317,13 +317,62 @@ def chart_radar_lifestyle(diet, activity, sleep, alcohol, smoking):
     )
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
-def chart_bmi_percentile(bmi, df):
-    fig = px.histogram(
-        df, x="bmi", nbins=40, color_discrete_sequence=[C_BLUE],
-        labels={"bmi": "Body Mass Index (BMI)"}, title="Your BMI in the Population Context"
+def chart_bmi_risk(df, user_bmi, user_risk):
+    bins = [0, 18.5, 25, 30, 60]
+    labels = ["Underweight", "Normal", "Overweight", "Obesity"]
+    tmp = df.copy()
+    tmp["bmi_group"] = pd.cut(tmp["bmi"], bins=bins, labels=labels, include_lowest=True)
+
+    user_group = pd.cut(
+        pd.Series([user_bmi]),
+        bins=bins,
+        labels=labels,
+        include_lowest=True,
+    ).iloc[0]
+    color_map = {label: (C_ORANGE if label == user_group else C_BLUE) for label in labels}
+
+    fig = px.box(
+        tmp.dropna(subset=["bmi_group", "diabetes_risk_score"]),
+        x="bmi_group",
+        y="diabetes_risk_score",
+        category_orders={"bmi_group": labels},
+        color="bmi_group",
+        color_discrete_map=color_map,
+        points="outliers",
+        labels={"bmi_group": "BMI Group", "diabetes_risk_score": "Diabetes Risk Score"},
+        title="Diabetes Risk Score vs BMI",
     )
-    fig.add_vline(x=bmi, line_dash="solid", line_color=C_WARM, line_width=3, annotation_text=f"Your BMI: {bmi:.1f}", annotation_font_color=C_WARM)
-    fig.update_layout(height=280, margin=dict(l=20, r=20, t=50, b=30), **PLOTLY_LAYOUT)
+    fig.update_traces(boxmean=True, jitter=0.2, whiskerwidth=0.6, marker_size=4, showlegend=False)
+
+    group_median = tmp.loc[tmp["bmi_group"] == user_group, "diabetes_risk_score"].median()
+    if pd.notna(group_median):
+        fig.add_scatter(
+            x=[user_group],
+            y=[group_median],
+            mode="markers",
+            marker=dict(color=C_WARM, size=11, line=dict(color="white", width=1)),
+            name="Your BMI Group Median",
+            hovertemplate=f"Your BMI Group: {user_group}<br>Median Risk: {group_median:.1f}<extra></extra>",
+            showlegend=False,
+        )
+
+    fig.add_hline(
+        y=user_risk,
+        line_dash="dot",
+        line_color=C_WARM,
+        line_width=2,
+        annotation_text=f"Your Risk: {user_risk:.1f}",
+        annotation_font_size=10,
+        annotation_font_color=C_WARM,
+    )
+    fig.update_layout(
+        title="Diabetes Risk Score vs BMI",
+        xaxis_title="BMI Group",
+        yaxis_title="Diabetes Risk Score",
+        height=360,
+        margin=dict(l=30, r=20, t=50, b=30),
+        **PLOTLY_LAYOUT,
+    )
     axis_style(fig)
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
@@ -336,7 +385,7 @@ def chart_sleep_risk(sleep, risk, df):
     )
     fig.update_traces(line_color=C_BLUE, line_width=3)
     fig.add_scatter(x=[sleep], y=[risk], mode="markers", marker=dict(color=C_WARM, size=12, line=dict(width=2, color="white")), name="You", hovertemplate=f"Sleep: {sleep}h<br>Your Risk: {risk}<extra></extra>")
-    fig.update_layout(height=280, showlegend=False, margin=dict(l=50, r=20, t=50, b=30), **PLOTLY_LAYOUT)
+    fig.update_layout(height=360, showlegend=False, margin=dict(l=50, r=20, t=50, b=30), **PLOTLY_LAYOUT)
     axis_style(fig)
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
@@ -466,7 +515,7 @@ def show(back_fn):
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown('<div class="sec-title">Body Mass & Sleep Impact</div>', unsafe_allow_html=True)
     rn1, rn2 = st.columns(2)
-    with rn1: chart_bmi_percentile(bmi, df)
+    with rn1: chart_bmi_risk(df, bmi, risk)
     with rn2: chart_sleep_risk(sleep, risk, df)
 
     st.markdown("<br><br>", unsafe_allow_html=True)
