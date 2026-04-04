@@ -151,7 +151,7 @@ def axis_style(fig):
 def chart_gauge(value, color):
     fig = go.Figure(go.Indicator(
         mode="gauge+number", value=value, domain={"x": [0, 1], "y": [0, 1]},
-        title={"text": "Risk Score", "font": {"size": 12, "color": "rgba(255,255,255,0.6)"}},
+        title={"text": "Diabetes Risk Score", "font": {"size": 12, "color": "rgba(255,255,255,0.6)"}},
         number={"font": {"size": 34, "color": color}},
         gauge={
             "axis": {"range": [0, 100], "tickcolor": "rgba(255,255,255,0.25)", "tickfont": {"size": 8}},
