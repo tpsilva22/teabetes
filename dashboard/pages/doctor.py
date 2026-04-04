@@ -88,10 +88,10 @@ def chart_age_histogram(df):
     fig = px.histogram(
         df, x="age", nbins=20,
         color_discrete_sequence=[C_BLUE],
-        labels={"age": "Age", "count": "Number of Patients"},
-        title="Age Distribution for Selected Stage"
+        labels={"age": "Age", "count": "Frequency"},
+        title="Age Distribution for Selected Diabetes Stage"
     )
-    fig.update_layout(height=300, margin=dict(l=10, r=10, t=40, b=10), **PLOTLY_LAYOUT)
+    fig.update_layout(height=300, margin=dict(l=10, r=10, t=40, b=10), yaxis_title="Frequency", **PLOTLY_LAYOUT)
     axis_style(fig)
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False})
 
