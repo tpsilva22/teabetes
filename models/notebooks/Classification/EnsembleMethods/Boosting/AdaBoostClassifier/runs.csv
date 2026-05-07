@@ -1,0 +1,4 @@
+"Start Time","Duration","Run ID","Name","Source Type","Source Name","User","Status","algorithm","estimator","learning_rate","n_estimators","optimization","random_state","accuracy","f1","fit_time","recall"
+"2026-05-07 11:50:18","6.3min","b5ec276699db458fa9cac1de275bd349","AdaBoost_Optuna","NOTEBOOK","AdaBoost.ipynb","Tiago Silva","FINISHED","","","0.9774035053693426","297","optuna","","0.9199","0.9284757567639967","338.1310496330261","0.8665"
+"2026-05-07 11:48:59","1.3min","b671b25e454a4508a310f56ecf35dfff","AdaBoost_GridSearch","NOTEBOOK","AdaBoost.ipynb","Tiago Silva","FINISHED","","","1.0","50","GridSearchCV","","0.9199","0.9284757567639967","78.80710077285767","0.8665"
+"2026-05-07 11:48:52","7.2s","20930854042a45f08d9cd51d843e8e14","AdaBoost_Baseline","NOTEBOOK","AdaBoost.ipynb","Tiago Silva","FINISHED","deprecated","None","1.0","50","none","42","0.9199","0.9284757567639967","6.995134115219116","0.8665"
