@@ -1,0 +1,16 @@
+Prompt para Problemas de RegressãoPrompt: > "A partir das runs guardadas no MLflow para este algoritmo de regressão, identifica a run campeã seguindo estes critérios de prioridade por eliminação:Escolhe a run com o menor MAE (Mean Absolute Error) no conjunto de teste (prioridade de 60%).Como segundo critério (peso de 30%), verifica o RMSE; rejeita runs onde o RMSE dispare face ao MAE para evitar erros catastróficos.Confirma se o $R^2$ Score está aceitável (peso de 10%).Se houver um empate técnico no MAE, usa como desempate a run que apresentar o menor Fit Time.Indica-me qual é a run vencedora, os seus hiperparâmetros e os valores das suas métricas."
+
+
+Prompt para Problemas de Classificação
+
+    Prompt: > "A partir das runs guardadas no MLflow para este algoritmo de classificação, identifica a run campeã seguindo estes critérios de prioridade por eliminação:
+
+        Escolhe a run com o maior Recall no conjunto de teste (prioridade clínica de 70%).
+
+        Em caso de empate ou diferença menor que 0.5%, usa como desempate o maior F1-Score (peso de 30%) para evitar falsos positivos excessivos.
+
+        Ignora a Accuracy.
+
+        Se o empate persistir, escolhe a run com o menor Fit Time.
+
+        Indica-me qual é a run vencedora, os seus hiperparâmetros e os valores das suas métricas.
