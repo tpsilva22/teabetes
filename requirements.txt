@@ -10,9 +10,14 @@ plotly
 statsmodels
 
 # Machine Learning & Metrics   
+scikit-learn
+xgboost
+joblib
 
 # Optimization & MLOps   
+mlflow
+optuna
 
 # Advanced Visualization (for Decision Trees and Dendrograms) 
-
-# Recommendation Algorithms (Challenge Component) 
+scipy
+graphviz
