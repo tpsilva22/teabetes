@@ -4,9 +4,11 @@ import numpy as np
 import joblib
 from pathlib import Path
 
-# Define the path to the WinnerModel folder (adjust if the folder is located elsewhere relative to app.py)
-MODEL_DIR_CLA = Path("C:/Users/Tiago Silva/Uni/OneDrive - Universidade Portucalense/Ambiente de Trabalho/Uni/3ano2sem/LAD/Grupo5_ProjetoLAD_Parte2/TrabalhoLAD/models/WinnerModel/Classification") 
-MODEL_DIR_REG = Path("C:/Users/Tiago Silva/Uni/OneDrive - Universidade Portucalense/Ambiente de Trabalho/Uni/3ano2sem/LAD/Grupo5_ProjetoLAD_Parte2/TrabalhoLAD/models/WinnerModel/Regression") 
+# Define the path to the WinnerModel folder
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
+MODEL_DIR_CLA = PROJECT_ROOT / "models" / "WinnerModel" / "Classification"
+MODEL_DIR_REG = PROJECT_ROOT / "models" / "WinnerModel" / "Regression"
 
 @st.cache_resource(show_spinner="Processing the AI engine...") # Cache the loaded models to avoid reloading on every interaction
 def load_ml_components():

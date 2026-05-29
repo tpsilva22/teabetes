@@ -1,8 +1,10 @@
 """Shared data loading. All pages import from here — CSV is cached once."""
 import pandas as pd
 import streamlit as st
+from pathlib import Path
 
-DATA_PATH = "../data/diabetes_dataset_new_variables.csv"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+DATA_PATH = PROJECT_ROOT / "data" / "diabetes_dataset_new_variables.csv"
 
 STAGE_ORDER  = ["No Diabetes", "Pre-Diabetes", "Type 2", "Type 1", "Gestational"]
 STAGE_COLORS = {
